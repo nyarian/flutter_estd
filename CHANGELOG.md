@@ -13,3 +13,7 @@
 ## 0.0.4
 
 * Added Flutter-based logging
+
+## 0.0.5
+
+* Added the Registry abstraction and a SharedPreferences-based implementation
