@@ -1,3 +1,3 @@
 library log;
 
-export 'infrastructure/log/log.dart';
+export 'log/log.dart';
