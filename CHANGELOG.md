@@ -5,3 +5,7 @@
 ## 0.0.2
 
 * Added error handling extensions, HTTP extensions, GetIt ServiceLocator implementation and ServiceLocatorWidget
+
+## 0.0.2
+
+* Added Flutter-based navigation extensions
