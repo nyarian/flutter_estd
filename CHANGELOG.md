@@ -17,3 +17,7 @@
 ## 0.0.5
 
 * Added the Registry abstraction and a SharedPreferences-based implementation
+
+## 0.0.5
+
+* Added ChangeNotifierResource
