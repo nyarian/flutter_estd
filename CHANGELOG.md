@@ -18,6 +18,10 @@
 
 * Added the Registry abstraction and a SharedPreferences-based implementation
 
-## 0.0.5
+## 0.0.6
 
 * Added ChangeNotifierResource
+
+## 0.0.7
+
+* Added the current value to LambdaMutationGateway's main method

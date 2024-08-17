@@ -46,7 +46,8 @@ class LambdaFetchGateway<T> implements FetchGateway<T> {
 }
 
 abstract interface class MutateGateway<T> {
-  factory MutateGateway.run(Producer<Future<T>> producer) = LambdaMutateGateway;
+  factory MutateGateway.run(Transformation<T, Future<T>> producer) =
+      LambdaMutateGateway;
 
   Future<T> mutate(T subject);
 }
@@ -55,9 +56,9 @@ class LambdaMutateGateway<T> implements MutateGateway<T> {
   const LambdaMutateGateway(this._producer);
 
   @override
-  Future<T> mutate(T subject) => _producer();
+  Future<T> mutate(T subject) => _producer(subject);
 
-  final Producer<Future<T>> _producer;
+  final Transformation<T, Future<T>> _producer;
 }
 
 sealed class MutationState<T> {
