@@ -9,7 +9,10 @@ class URLPath {
   factory URLPath(String path) {
     try {
       final uri = Uri.parse('$_host$path');
-      return URLPath._(path, uri.queryParametersAll);
+      final qparamsSeparator = path.indexOf('?');
+      final newPath =
+          qparamsSeparator == -1 ? path : path.substring(0, qparamsSeparator);
+      return URLPath._(newPath, uri.queryParametersAll);
     } on FormatException catch (e) {
       throw InvalidURLPathException(message: 'Invalid path: $path', cause: e);
     }
@@ -137,7 +140,6 @@ abstract class URLPathException implements Exception {
                 "${message == null ? "" : "\nMessage: $message"}"
                 "${cause == null ? "" : "\nCause: ${cause.toString()}"}");
   }
-
 }
 
 final class InvalidURLPathException extends URLPathException {

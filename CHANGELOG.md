@@ -25,3 +25,7 @@
 ## 0.0.7
 
 * Added the current value to LambdaMutationGateway's main method
+
+## 0.0.8
+
+* Query parameters are now removed from the `path` in URLPath
