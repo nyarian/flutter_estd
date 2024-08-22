@@ -79,6 +79,11 @@ class URLPath {
     return URLPath._(_path, Map.of(params));
   }
 
+  List<String>? queryParam(String key) => _queryParams[key];
+
+  Map<String, List<String>> get queryParams =>
+      BuiltMap.of(_queryParams).toMap();
+
   String get asString {
     final path = Uri(
       scheme: 'https',

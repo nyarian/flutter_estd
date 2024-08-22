@@ -29,3 +29,7 @@
 ## 0.0.8
 
 * Query parameters are now removed from the `path` in URLPath
+
+## 0.0.9
+
+* Explicit query parameters interface was added to URLPath
