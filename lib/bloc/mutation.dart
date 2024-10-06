@@ -90,11 +90,6 @@ sealed class MutationState<T> {
       transitionErrorMsg("Can't clear error for $this");
 }
 
-extension SimplifiedVisitor<T> on MutationState<T> {
-  R simpleVisit<R>(SimplifiedMutationStateVisitor<T, R> visitor) =>
-      visit(_SimplifiedMutationStateVisitorAdapter(visitor));
-}
-
 abstract interface class MutationStateVisitor<T, R> {
   R fetching(T? current);
 
@@ -134,39 +129,6 @@ abstract base class AdHocMutationStateVisitor<T, R>
   R mutationError(Object error, T current) => _stub();
 
   final Producer<R> _stub;
-}
-
-abstract interface class SimplifiedMutationStateVisitor<T, R> {
-  R processing(T? current);
-
-  R result(T result);
-
-  R error(Object error, T? current);
-}
-
-class _SimplifiedMutationStateVisitorAdapter<T, R>
-    implements MutationStateVisitor<T, R> {
-  _SimplifiedMutationStateVisitorAdapter(this._delegate);
-
-  @override
-  R fetching(T? current) => _delegate.processing(current);
-
-  @override
-  R fetched(T result) => _delegate.result(result);
-
-  @override
-  R fetchError(Object error, T? current) => _delegate.error(error, current);
-
-  @override
-  R mutating(T current) => _delegate.processing(current);
-
-  @override
-  R mutated(T result) => _delegate.result(result);
-
-  @override
-  R mutationError(Object error, T current) => _delegate.error(error, current);
-
-  final SimplifiedMutationStateVisitor<T, R> _delegate;
 }
 
 final class PartialMutationException<T> implements Exception {
@@ -388,6 +350,151 @@ class MutationErrorState<T> extends MutationState<T> {
 
   @override
   String toString() => 'MutationErrorState(current: $current, error: $error)';
+}
+
+@immutable
+sealed class SimplifiedMutationState<T> {
+  const SimplifiedMutationState();
+
+  factory SimplifiedMutationState.from(MutationState<T> state) {
+    return switch (state) {
+      FetchingState<T>() => SimplifiedProcessingState<T>(null),
+      MutatingState<T>(:var current) => SimplifiedProcessingState<T>(current),
+      FetchErrorState<T>(:var error) => SimplifiedErrorState<T>(error, null),
+      MutationErrorState<T>(:var error, :var current) =>
+        SimplifiedErrorState<T>(error, current),
+      FetchedState<T>(:var result) ||
+      MutatedState<T>(:var result) =>
+        SimplifiedResultState(result),
+    };
+  }
+
+  R visit<R>(SimplifiedMutationStateVisitor<T, R> visitor);
+}
+
+@immutable
+class SimplifiedProcessingState<T> implements SimplifiedMutationState<T> {
+  const SimplifiedProcessingState(this.current);
+
+  @override
+  R visit<R>(SimplifiedMutationStateVisitor<T, R> visitor) {
+    return visitor.processing(current);
+  }
+
+  final T? current;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SimplifiedProcessingState<T> && other.current == current;
+  }
+
+  @override
+  int get hashCode => current.hashCode;
+
+  @override
+  String toString() => 'SimplifiedProcessingState(current: $current)';
+}
+
+@immutable
+class SimplifiedErrorState<T> implements SimplifiedMutationState<T> {
+  const SimplifiedErrorState(this.error, this.current);
+
+  @override
+  R visit<R>(SimplifiedMutationStateVisitor<T, R> visitor) {
+    return visitor.error(error, current);
+  }
+
+  final Object error;
+  final T? current;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SimplifiedErrorState<T> &&
+        other.error == error &&
+        other.current == current;
+  }
+
+  @override
+  int get hashCode => error.hashCode ^ current.hashCode;
+
+  @override
+  String toString() => 'SimplifiedErrorState(error: $error, current: $current)';
+}
+
+@immutable
+class SimplifiedResultState<T> implements SimplifiedMutationState<T> {
+  const SimplifiedResultState(this.result);
+
+  @override
+  R visit<R>(SimplifiedMutationStateVisitor<T, R> visitor) {
+    return visitor.result(result);
+  }
+
+  final T result;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SimplifiedResultState<T> && other.result == result;
+  }
+
+  @override
+  int get hashCode => result.hashCode;
+
+  @override
+  String toString() => 'SimplifiedSuccessState(result: $result)';
+}
+
+extension StreamStateSimplificationExtension<T> on Stream<MutationState<T>> {
+  Stream<SimplifiedMutationState<T>> simplified() {
+    return map(SimplifiedMutationState.from);
+  }
+}
+
+extension StateSimplificationExtension<T> on MutationState<T> {
+  SimplifiedMutationState<T> toSimplified() {
+    return SimplifiedMutationState.from(this);
+  }
+}
+
+abstract interface class SimplifiedMutationStateVisitor<T, R> {
+  R processing(T? current);
+
+  R result(T result);
+
+  R error(Object error, T? current);
+}
+
+extension SimplifiedVisitorExtension<T> on MutationState<T> {
+  R simpleVisit<R>(SimplifiedMutationStateVisitor<T, R> visitor) =>
+      visit(_SimplifiedMutationStateVisitorAdapter(visitor));
+}
+
+class _SimplifiedMutationStateVisitorAdapter<T, R>
+    implements MutationStateVisitor<T, R> {
+  _SimplifiedMutationStateVisitorAdapter(this._delegate);
+
+  @override
+  R fetching(T? current) => _delegate.processing(current);
+
+  @override
+  R fetched(T result) => _delegate.result(result);
+
+  @override
+  R fetchError(Object error, T? current) => _delegate.error(error, current);
+
+  @override
+  R mutating(T current) => _delegate.processing(current);
+
+  @override
+  R mutated(T result) => _delegate.result(result);
+
+  @override
+  R mutationError(Object error, T current) => _delegate.error(error, current);
+
+  final SimplifiedMutationStateVisitor<T, R> _delegate;
 }
 
 @immutable
