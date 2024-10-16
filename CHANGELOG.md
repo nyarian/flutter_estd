@@ -33,3 +33,7 @@
 ## 0.0.9
 
 * Explicit query parameters interface was added to URLPath
+
+## 0.0.10
+
+* Added `ResultBloc` - analogous to `OperationBloc`, but can carries the operation result
