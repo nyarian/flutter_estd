@@ -37,3 +37,7 @@
 ## 0.0.10
 
 * Added `ResultBloc` - analogous to `OperationBloc`, but can carries the operation result
+
+## 0.0.10
+
+* Added `AnimationListenerMixinResource`

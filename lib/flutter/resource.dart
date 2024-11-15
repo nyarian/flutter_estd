@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_estd/estd/resource.dart';
 
 extension ChangeNotifierResourceExtension on ChangeNotifier {
@@ -13,4 +13,18 @@ class ChangeNotifierResource implements Resource {
 
   @override
   void release() => _notifier.dispose();
+}
+
+extension AnimationListenerMixinResourceExtension
+    on AnimationEagerListenerMixin {
+  Resource asResource() => AnimationListenerMixinResource(this);
+}
+
+class AnimationListenerMixinResource implements Resource {
+  const AnimationListenerMixinResource(this._animation);
+
+  @override
+  void release() => _animation.dispose();
+
+  final AnimationEagerListenerMixin _animation;
 }
