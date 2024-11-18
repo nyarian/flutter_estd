@@ -38,6 +38,10 @@
 
 * Added `ResultBloc` - analogous to `OperationBloc`, but can carries the operation result
 
-## 0.0.10
+## 0.0.11
 
 * Added `AnimationListenerMixinResource`
+
+## 0.0.12
+
+* Added the separate `bloc_result` sub-library
