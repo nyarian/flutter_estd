@@ -9,7 +9,7 @@ class ResultBloc<T> implements Bloc<ResultState<T>> {
           initialState: IdleState<T>(),
         );
 
-  void run(Provider<T> operation) => _delegate.add(_Run(operation));
+  void run(Supplier<T> supplier) => _delegate.add(_Run(supplier));
 
   void onErrorProcessed() => _delegate.add(_RevertToIdle<T>());
 
@@ -27,13 +27,13 @@ class ResultBloc<T> implements Bloc<ResultState<T>> {
   final MutableBloc<ResultState<T>> _delegate;
 }
 
-abstract interface class Provider<T> {
+abstract interface class Supplier<T> {
   Future<T> run();
 }
 
 @immutable
-class LambdaOperation<T> implements Provider<T> {
-  const LambdaOperation(this._function);
+class LambdaSupplier<T> implements Supplier<T> {
+  const LambdaSupplier(this._function);
 
   @override
   Future<T> run() => _function();
@@ -130,6 +130,9 @@ class ErrorState<T> extends ResultState<T> {
   @override
   ResultState<T> _idle() => IdleState<T>();
 
+  @override
+  ResultState<T> _processing() => ProcessingState<T>();
+
   final Object cause;
 
   @override
@@ -167,7 +170,7 @@ class _Run<T> implements Event<ResultState<T>> {
     }
   }
 
-  final Provider<T> _operation;
+  final Supplier<T> _operation;
 }
 
 class _RevertToIdle<T> implements Event<ResultState<T>> {

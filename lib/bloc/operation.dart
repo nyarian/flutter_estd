@@ -126,6 +126,9 @@ class ErrorState extends OperationState {
   @override
   OperationState _idle() => const IdleState();
 
+  @override
+  OperationState _processing() => const ProcessingState();
+
   final Object cause;
 
   @override

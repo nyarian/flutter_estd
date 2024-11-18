@@ -45,3 +45,8 @@
 ## 0.0.12
 
 * Added the separate `bloc_result` sub-library
+
+## 0.0.13
+
+* Renamed the Provider to Supplier for ResultBloc, as well as LambdaOperation to LambdaSupplier
+* Relaxed the state transition for OperationBloc and ResultBloc: operations can now be ran from ErrorState
