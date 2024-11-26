@@ -17,6 +17,13 @@ class Query<T> {
   bool isNextPageFor(Query<T> previous) =>
       previous.value == value && start == previous.start + previous.size;
 
+  bool prolongs(Query<T> previous) =>
+      previous.value == value && start > previous.start;
+
+  Query<T> shift(int offset) {
+    return Query(value: value, start: start + offset);
+  }
+
   final T value;
   final int start;
   final int size;

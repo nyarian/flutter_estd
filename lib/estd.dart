@@ -7,6 +7,7 @@ export 'estd/functional/std.dart';
 export 'estd/iterable.dart';
 export 'estd/nothing.dart';
 export 'estd/nullability.dart';
+export 'estd/object.dart';
 export 'estd/query.dart';
 export 'estd/resource.dart';
 export 'estd/scoped.dart';

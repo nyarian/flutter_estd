@@ -50,3 +50,8 @@
 
 * Renamed the Provider to Supplier for ResultBloc, as well as LambdaOperation to LambdaSupplier
 * Relaxed the state transition for OperationBloc and ResultBloc: operations can now be ran from ErrorState
+
+## 0.0.14
+
+* Included the `let` extension method
+* Expanded PagedBloc to support append / prepend / remove / replace operations as well as configurable item actualization and list differences reconciliation routines
