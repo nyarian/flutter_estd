@@ -2,11 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_estd/bloc/bloc.dart';
 
-typedef Builder<T> = Widget Function(BuildContext context, T state);
+typedef BlocBuilderChild<T> = Widget Function(BuildContext context, T state);
 
 class BlocBuilder<T> extends StatelessWidget {
   final Bloc<T> bloc;
-  final Builder<T> builder;
+  final BlocBuilderChild<T> builder;
 
   const BlocBuilder({required this.bloc, required this.builder, super.key});
 
