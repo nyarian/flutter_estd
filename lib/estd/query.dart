@@ -14,15 +14,17 @@ class Query<T> {
     int size = defaultSize,
   }) : this(value: value, start: start, size: size);
 
-  bool isNextPageFor(Query<T> previous) =>
-      previous.value == value && start == previous.start + previous.size;
-
-  bool prolongs(Query<T> previous) =>
-      previous.value == value && start > previous.start;
-
-  Query<T> shift(int offset) {
-    return Query(value: value, start: start + offset);
+  bool isNextPageFor(Query<T> previous) {
+    return previous.value == value && start == previous.start + previous.size;
   }
+
+  bool prolongs(Query<T> previous) {
+    return previous.value == value && start > previous.start;
+  }
+
+  Query<T> shift(int offset) => Query(value: value, start: start + offset);
+
+  Query<R> replace<R>(R value) => Query(value: value, start: start, size: size);
 
   final T value;
   final int start;

@@ -56,6 +56,10 @@
 * Included the `let` extension method
 * Expanded PagedBloc to support append / prepend / remove / replace operations as well as configurable item actualization and list differences reconciliation routines
 
-## 0.0.14
+## 0.0.15
 
 * Renamed the "Builder" typedef for BlocBuilder
+
+## 0.0.16
+
+* Add value replacement option for Query
