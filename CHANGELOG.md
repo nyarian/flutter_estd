@@ -63,3 +63,7 @@
 ## 0.0.16
 
 * Add value replacement option for Query
+
+## 0.0.16
+
+* Fix the PagedBloc's default constructor bug regarding the constant type creation with a generic type argument

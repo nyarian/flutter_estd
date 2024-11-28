@@ -85,17 +85,22 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
     Query<Q> firstQuery, {
     Iterable<T>? initialData,
     int pageSize = Query.defaultSize,
-    ElementComparisonStrategy<T> strategy = const NaturalComparisonStrategy(),
-    ShortCircuitStrategy<T> shortCircuit = const LatestShortCircuitStrategy(),
+    ElementComparisonStrategy<T>? strategy,
+    ShortCircuitStrategy<T>? shortCircuit,
   })  : _pageSize = pageSize,
-        _strategy = strategy,
-        _shortCircuit = shortCircuit,
+        _strategy = strategy ?? NaturalComparisonStrategy<T>(),
+        _shortCircuit = shortCircuit ?? LatestShortCircuitStrategy<T>(),
         _delegate = StreamTransformerBloc.mix(
           initialState: initialData == null
               ? FetchingState(null, firstQuery)
               : FetchedState(BuiltList.of(initialData), firstQuery),
           initialEvent: initialData == null
-              ? _QueryEvent(firstQuery, _gateway, strategy, shortCircuit)
+              ? _QueryEvent(
+                  firstQuery,
+                  _gateway,
+                  strategy ?? NaturalComparisonStrategy<T>(),
+                  shortCircuit ?? LatestShortCircuitStrategy<T>(),
+                )
               : null,
         );
 
