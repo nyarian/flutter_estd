@@ -157,6 +157,8 @@ sealed class PageState<T, Q> {
 
   R visit<R>(PageStateVisitor<T, Q, R> visitor);
 
+  Query<Q> get query;
+
   PageState<T, Q> _fetching(Query<Q> query) =>
       transitionErrorMsg("Can't transit to fetching state from $this");
 
@@ -316,6 +318,7 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   }
 
   final BuiltList<T>? current;
+  @override
   final Query<Q> query;
 
   @override
@@ -370,6 +373,7 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   final BuiltList<T>? current;
+  @override
   final Query<Q> query;
   final Object cause;
 
@@ -423,6 +427,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   }
 
   final BuiltList<T> current;
+  @override
   final Query<Q> query;
   bool get hasMore => query.start + query.size <= current.length;
 

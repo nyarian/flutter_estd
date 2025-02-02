@@ -64,6 +64,10 @@
 
 * Add value replacement option for Query
 
-## 0.0.16
+## 0.0.17
 
 * Fix the PagedBloc's default constructor bug regarding the constant type creation with a generic type argument
+
+## 0.0.18
+
+* Publish the "query" property from PageState

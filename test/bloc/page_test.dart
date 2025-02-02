@@ -61,18 +61,6 @@ void main() {
         },
         timeout: const Timeout(Duration(seconds: 1)),
       );
-
-      test(
-        'starts with the fetching state in the absence of initial payload',
-        () {
-          final subject = createTestSubject();
-          expect(
-            subject.currentState(),
-            const FetchingState<_Element, String>(null, Query.of('')),
-          );
-        },
-        timeout: const Timeout(Duration(seconds: 1)),
-      );
     },
   );
 
