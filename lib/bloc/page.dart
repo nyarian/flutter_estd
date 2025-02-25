@@ -158,8 +158,9 @@ abstract interface class PagedGateway<T, Q> {
   Future<Page<T>> get(Query<Q> query);
 }
 
-abstract interface class NoMetadataPagedGateway<T, Q>
-    implements PagedGateway<T, Q> {
+abstract class NoMetadataPagedGateway<T, Q> implements PagedGateway<T, Q> {
+  const NoMetadataPagedGateway();
+
   @override
   Future<Page<T>> get(Query<Q> query) {
     return getElements(query).then((e) => (e, null));
