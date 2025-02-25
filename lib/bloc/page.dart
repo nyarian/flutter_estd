@@ -299,8 +299,11 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   R visit<R>(PageStateVisitor<T, Q, R> visitor) => visitor.fetching(query);
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) =>
-      FetchingState(current, metadata, query);
+  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
+        query == this.query ? current : null,
+        query == this.query ? metadata : null,
+        query,
+      );
 
   @override
   PageState<T, Q> _fetched(
@@ -373,8 +376,11 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
       visitor.failure(query, cause);
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) =>
-      FetchingState(this.query == query ? current : null, metadata, query);
+  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
+        this.query == query ? current : null,
+        this.query == query ? metadata : null,
+        query,
+      );
 
   @override
   PageState<T, Q> _append(
@@ -441,7 +447,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   @override
   PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
         query.prolongs(this.query) ? current : null,
-        metadata,
+        query.prolongs(this.query) ? metadata : null,
         query,
       );
 
