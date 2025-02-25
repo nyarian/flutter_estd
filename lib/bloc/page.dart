@@ -83,7 +83,7 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
   PagedBloc(
     this._gateway,
     Query<Q> firstQuery, {
-    Iterable<T>? initialData,
+    Page<T>? initialData,
     int pageSize = Query.defaultSize,
     ElementComparisonStrategy<T>? strategy,
     ShortCircuitStrategy<T>? shortCircuit,
@@ -92,8 +92,12 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
         _shortCircuit = shortCircuit ?? LatestShortCircuitStrategy<T>(),
         _delegate = StreamTransformerBloc.mix(
           initialState: initialData == null
-              ? FetchingState(null, firstQuery)
-              : FetchedState(BuiltList.of(initialData), firstQuery),
+              ? FetchingState(null, null, firstQuery)
+              : FetchedState(
+                  BuiltList.of(initialData.$1),
+                  initialData.$2?.build(),
+                  firstQuery,
+                ),
           initialEvent: initialData == null
               ? _QueryEvent(
                   firstQuery,
@@ -148,8 +152,10 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
   final ShortCircuitStrategy<T> _shortCircuit;
 }
 
+typedef Page<T> = (Iterable<T>, Map<String, Object?>?);
+
 abstract interface class PagedGateway<T, Q> {
-  Future<Iterable<T>> get(Query<Q> query);
+  Future<Page<T>> get(Query<Q> query);
 }
 
 sealed class PageState<T, Q> {
@@ -157,6 +163,8 @@ sealed class PageState<T, Q> {
 
   R visit<R>(PageStateVisitor<T, Q, R> visitor);
 
+  BuiltList<T>? get current;
+  BuiltMap<String, Object?>? get metadata;
   Query<Q> get query;
 
   PageState<T, Q> _fetching(Query<Q> query) =>
@@ -164,6 +172,7 @@ sealed class PageState<T, Q> {
 
   PageState<T, Q> _fetched(
     Iterable<T> elements,
+    Map<String, Object?>? metadata,
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
@@ -273,26 +282,30 @@ abstract base class AdHocPageStateVisitor<T, Q, R>
 
 @immutable
 final class FetchingState<T, Q> extends PageState<T, Q> {
-  const FetchingState(this.current, this.query);
+  const FetchingState(this.current, this.metadata, this.query);
 
   @override
   R visit<R>(PageStateVisitor<T, Q, R> visitor) => visitor.fetching(query);
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(current, query);
+  PageState<T, Q> _fetching(Query<Q> query) =>
+      FetchingState(current, metadata, query);
 
   @override
   PageState<T, Q> _fetched(
     Iterable<T> elements,
+    Map<String, Object?>? metadata,
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final updated = _appendList(current, elements, strategy, shortCircuit);
-    return FetchedState(updated, query);
+    return FetchedState(updated, metadata?.build(), query);
   }
 
   @override
-  PageState<T, Q> _failure(Object cause) => ErrorState(current, cause, query);
+  PageState<T, Q> _failure(Object cause) {
+    return ErrorState(current, metadata, cause, query);
+  }
 
   @override
   PageState<T, Q> _append(
@@ -301,23 +314,25 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final updated = _appendList(current, source, strategy, shortCircuit);
-    return FetchingState(updated, query);
+    return FetchingState(updated, metadata, query);
   }
 
   @override
   PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    return FetchingState(_prependElement(current, source, strategy), query);
+    final result = _prependElement(current, source, strategy);
+    return FetchingState(result, metadata, query);
   }
 
   @override
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
-    return FetchingState(
-      current?.let((e) => _replaceElement(e, source, predicate)),
-      query,
-    );
+    final result = current?.let((e) => _replaceElement(e, source, predicate));
+    return FetchingState(result, metadata, query);
   }
 
+  @override
   final BuiltList<T>? current;
+  @override
+  final BuiltMap<String, Object?>? metadata;
   @override
   final Query<Q> query;
 
@@ -326,19 +341,21 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
     if (identical(this, other)) return true;
     return other is FetchingState<T, Q> &&
         other.current == current &&
+        other.metadata == metadata &&
         other.query == query;
   }
 
   @override
-  int get hashCode => current.hashCode ^ query.hashCode;
+  int get hashCode => current.hashCode ^ metadata.hashCode ^ query.hashCode;
 
   @override
-  String toString() => 'FetchingState(current: $current, query: $query)';
+  String toString() => 'FetchingState(current: $current, metadata: $metadata, '
+      'query: $query, metadata: $metadata)';
 }
 
 @immutable
 final class ErrorState<T, Q> extends PageState<T, Q> {
-  const ErrorState(this.current, this.cause, this.query);
+  const ErrorState(this.current, this.metadata, this.cause, this.query);
 
   @override
   R visit<R>(PageStateVisitor<T, Q, R> visitor) =>
@@ -346,7 +363,7 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
 
   @override
   PageState<T, Q> _fetching(Query<Q> query) =>
-      FetchingState(this.query == query ? current : null, query);
+      FetchingState(this.query == query ? current : null, metadata, query);
 
   @override
   PageState<T, Q> _append(
@@ -355,24 +372,29 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final updated = _appendList(current, source, strategy, shortCircuit);
-    return ErrorState(updated, cause, query);
+    return ErrorState(updated, metadata, cause, query);
   }
 
   @override
   PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    return ErrorState(_prependElement(current, source, strategy), cause, query);
+    final prepended = _prependElement(current, source, strategy);
+    return ErrorState(prepended, metadata, cause, query);
   }
 
   @override
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
     return ErrorState(
       current?.let((e) => _replaceElement(e, source, predicate)),
+      metadata,
       cause,
       query,
     );
   }
 
+  @override
   final BuiltList<T>? current;
+  @override
+  final BuiltMap<String, Object?>? metadata;
   @override
   final Query<Q> query;
   final Object cause;
@@ -382,29 +404,35 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
     if (identical(this, other)) return true;
     return other is ErrorState<T, Q> &&
         other.current == current &&
+        other.metadata == metadata &&
         other.query == query &&
         other.cause == cause;
   }
 
   @override
-  int get hashCode => current.hashCode ^ query.hashCode ^ cause.hashCode;
+  int get hashCode =>
+      current.hashCode ^ metadata.hashCode ^ query.hashCode ^ cause.hashCode;
 
   @override
-  String toString() =>
-      'ErrorState(current: $current, query: $query, cause: $cause)';
+  String toString() => 'ErrorState(current: $current, metadata: $metadata, '
+      'query: $query, cause: $cause)';
 }
 
 @immutable
 final class FetchedState<T, Q> extends PageState<T, Q> {
-  const FetchedState(this.current, this.query);
+  const FetchedState(this.current, this.metadata, this.query);
 
   @override
-  R visit<R>(PageStateVisitor<T, Q, R> visitor) =>
-      visitor.fetched(query, current, hasMore: hasMore);
+  R visit<R>(PageStateVisitor<T, Q, R> visitor) {
+    return visitor.fetched(query, current, hasMore: hasMore);
+  }
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) =>
-      FetchingState(query.prolongs(this.query) ? current : null, query);
+  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
+        query.prolongs(this.query) ? current : null,
+        metadata,
+        query,
+      );
 
   @override
   PageState<T, Q> _append(
@@ -413,20 +441,25 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final updated = _appendList(current, source, strategy, shortCircuit);
-    return FetchedState(updated, query);
+    return FetchedState(updated, metadata, query);
   }
 
   @override
   PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    return FetchedState(_prependElement(current, source, strategy), query);
+    final prepended = _prependElement(current, source, strategy);
+    return FetchedState(prepended, metadata, query);
   }
 
   @override
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
-    return FetchedState(_replaceElement(current, source, predicate), query);
+    final replaced = _replaceElement(current, source, predicate);
+    return FetchedState(replaced, metadata, query);
   }
 
+  @override
   final BuiltList<T> current;
+  @override
+  final BuiltMap<String, Object?>? metadata;
   @override
   final Query<Q> query;
   bool get hasMore => query.start + query.size <= current.length;
@@ -436,14 +469,16 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     if (identical(this, other)) return true;
     return other is FetchedState<T, Q> &&
         other.current == current &&
+        other.metadata == metadata &&
         other.query == query;
   }
 
   @override
-  int get hashCode => current.hashCode ^ query.hashCode;
+  int get hashCode => current.hashCode ^ metadata.hashCode ^ query.hashCode;
 
   @override
-  String toString() => 'FetchedState(current: $current, query: $query)';
+  String toString() => 'FetchedState(current: $current, metadata: $metadata, '
+      'query: $query)';
 }
 
 class _PageEvent<T, Q> implements Event<PageState<T, Q>> {
@@ -495,8 +530,8 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
     yield state()._fetching(_query);
     try {
-      final elements = await _gateway.get(_query);
-      yield state()._fetched(elements, _strategy, _shortCircuit);
+      final (elements, metadata) = await _gateway.get(_query);
+      yield state()._fetched(elements, metadata, _strategy, _shortCircuit);
     } on Object catch (e) {
       yield state()._failure(e);
     }

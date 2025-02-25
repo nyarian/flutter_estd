@@ -82,7 +82,7 @@ sealed class MutationState<T> {
   MutationState<T> _patch(Transformation<T, T> transformation) => this;
 
   // False lint positive: it is used in the override.
-  // ignore: unused_element
+  // ignore: unused_element_parameter
   MutationState<T> _mutationError(Object error, [T? partial]) =>
       transitionError(MutationErrorState);
 

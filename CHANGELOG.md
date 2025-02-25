@@ -71,3 +71,7 @@
 ## 0.0.18
 
 * Publish the "query" property from PageState
+
+## 0.0.19
+
+* Publish the "current" property from PageState, add metadata support to the PagedBloc

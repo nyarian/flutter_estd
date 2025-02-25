@@ -17,7 +17,7 @@ void main() {
         const NaturalComparisonStrategy(),
     ShortCircuitStrategy<_Element> shortCircuit =
         const LatestShortCircuitStrategy(),
-    Iterable<_Element>? initialData,
+    Page<_Element>? initialData,
   }) {
     return PagedBloc(
       gateway,
@@ -37,7 +37,7 @@ void main() {
         () {
           final initial =
               BuiltList.of(List.generate(20, (i) => _Element('$i')));
-          final subject = createTestSubject(initialData: initial);
+          final subject = createTestSubject(initialData: (initial, null));
           expect(
             subject.state(),
             emitsThrough(
@@ -56,7 +56,7 @@ void main() {
           final subject = createTestSubject();
           expect(
             subject.currentState(),
-            const FetchingState<_Element, String>(null, Query.of('')),
+            const FetchingState<_Element, String>(null, null, Query.of('')),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -70,13 +70,31 @@ void main() {
       test(
         'fetched list is published',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '')));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: ''));
           final subject = createTestSubject();
           expect(
             subject.state(),
             emitsThrough(predicate<FetchedState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'metadata is published',
+        () async {
+          const given = {'1': 1};
+          final (_, _) = await const _ContinuousElementGateway(metadata: given)
+              .get(const Query(value: ''));
+          final subject = createTestSubject(
+            gateway: const _ContinuousElementGateway(metadata: given),
+          );
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(given))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -102,8 +120,8 @@ void main() {
       test(
         'fetch error is recovered from with retrying',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '')));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: ''));
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
@@ -119,7 +137,7 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<FetchedState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -133,8 +151,8 @@ void main() {
       test(
         'triggers the fetching state with the last snapshotted list',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '')));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: ''));
 
           final subject = createTestSubject();
           await _PagedFixture(subject).prepare();
@@ -142,7 +160,7 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<FetchingState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -166,10 +184,28 @@ void main() {
       );
 
       test(
+        'retains metadata for the fetching state with the next query',
+        () async {
+          const expected = {'1': 1};
+
+          final subject = createTestSubject(
+              gateway: const _ContinuousElementGateway(metadata: expected));
+          await _PagedFixture(subject).prepare();
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchingState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected))),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
         'error retains the previous page state',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '')));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: ''));
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
@@ -184,7 +220,32 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<ErrorState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'error retains the previous metadata',
+        () async {
+          const expected = {'1': 1};
+
+          final subject = createTestSubject(
+            gateway: _IncrementalDelegatingElementGateway((count, query) {
+              return switch (count) {
+                0 => const _ContinuousElementGateway(metadata: expected)
+                    .get(query),
+                _ => throw Exception(),
+              };
+            }),
+          );
+          await _PagedFixture(subject).prepare();
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<ErrorState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -193,8 +254,8 @@ void main() {
       test(
         'appends the next page to the current page',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 40)));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: '', size: 40));
 
           final subject = createTestSubject();
           await _PagedFixture(subject).prepare();
@@ -202,7 +263,32 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<FetchedState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'updates metadata on next page',
+        () async {
+          const expected = {'2': 2};
+
+          final subject = createTestSubject(
+            gateway: _IncrementalDelegatingElementGateway((count, query) {
+              return switch (count) {
+                0 => const _ContinuousElementGateway().get(query),
+                _ => const _ContinuousElementGateway(metadata: expected)
+                    .get(query),
+              };
+            }),
+          );
+          await _PagedFixture(subject).prepare();
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -211,8 +297,8 @@ void main() {
       test(
         'appends the next page to the current page on paging error retry',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 40)));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: '', size: 40));
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
@@ -229,7 +315,7 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<FetchedState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -238,8 +324,8 @@ void main() {
       test(
         'append accounts for duplicates caused by a linear page shift',
         () async {
-          final expected = BuiltList.of(await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 30)));
+          final (expected, _) = await const _ContinuousElementGateway()
+              .get(const Query(value: '', size: 30));
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
@@ -255,7 +341,7 @@ void main() {
           expect(
             subject.state(),
             emitsThrough(predicate<FetchedState<_Element, String>>(
-                (e) => e.current == expected)),
+                (e) => e.current == BuiltList.of(expected))),
           );
         },
         timeout: const Timeout(Duration(seconds: 1)),
@@ -265,10 +351,12 @@ void main() {
         'append short circuits if tails differ identity-wise (latest)',
         () async {
           final expected = BuiltList.of([
-            ...await const _ContinuousElementGateway()
-                .get(const Query(value: '', size: 10)),
-            ...await const _ContinuousElementGateway(multiplier: 2)
-                .get(const Query(value: '', start: 10)),
+            ...(await const _ContinuousElementGateway()
+                    .get(const Query(value: '', size: 10)))
+                .$1,
+            ...(await const _ContinuousElementGateway(multiplier: 2)
+                    .get(const Query(value: '', start: 10)))
+                .$1,
           ]);
 
           final subject = createTestSubject(
@@ -296,10 +384,12 @@ void main() {
         'append short circuits if tails differ identity-wise (retaining)',
         () async {
           final expected = BuiltList.of([
-            ...await const _ContinuousElementGateway()
-                .get(const Query(value: '')),
-            ...await const _ContinuousElementGateway(multiplier: 2)
-                .get(const Query(value: '', start: 20, size: 15)),
+            ...(await const _ContinuousElementGateway()
+                    .get(const Query(value: '')))
+                .$1,
+            ...(await const _ContinuousElementGateway(multiplier: 2)
+                    .get(const Query(value: '', start: 20, size: 15)))
+                .$1,
           ]);
 
           final subject = createTestSubject(
@@ -335,6 +425,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..[0] = given);
 
@@ -357,6 +448,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..[0] = given);
 
@@ -383,6 +475,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..[0] = given);
 
@@ -414,6 +507,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..add(given));
 
@@ -436,6 +530,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..add(given));
 
@@ -462,6 +557,7 @@ void main() {
           const given = _Element('#20');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..add(given));
 
@@ -485,7 +581,7 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final given =
+          final (given, _) =
               await const _ContinuousElementGateway().get(const Query.of(''));
           final expected = BuiltList.of(given);
 
@@ -513,6 +609,7 @@ void main() {
           const given = [_Element('#20'), _Element('#21')];
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..addAll(given));
 
@@ -535,6 +632,7 @@ void main() {
           const given = [_Element('#20'), _Element('#21')];
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..addAll(given));
 
@@ -561,6 +659,7 @@ void main() {
           const given = [_Element('#20'), _Element('#21')];
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..addAll(given));
 
@@ -584,7 +683,7 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final given =
+          final (given, _) =
               await const _ContinuousElementGateway().get(const Query.of(''));
           final expected = BuiltList.of(given);
 
@@ -637,6 +736,7 @@ void main() {
           const given = _Element('#-1');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..insert(0, given));
 
@@ -659,6 +759,7 @@ void main() {
           const given = _Element('#-1');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..insert(0, given));
 
@@ -685,6 +786,7 @@ void main() {
           const given = _Element('#-1');
           final expected = BuiltList.of(
               (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
                   .toList()
                 ..insert(0, given));
 
@@ -708,7 +810,7 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final given =
+          final (given, _) =
               await const _ContinuousElementGateway().get(const Query.of(''));
           final expected = BuiltList.of(given);
 
@@ -748,25 +850,29 @@ class _Element {
 }
 
 class _ContinuousElementGateway implements PagedGateway<_Element, String> {
-  const _ContinuousElementGateway({int multiplier = 1})
+  const _ContinuousElementGateway({int multiplier = 1, this.metadata})
       : _multiplier = multiplier;
 
   @override
-  Future<Iterable<_Element>> get(Query<String> query) async {
-    return List.generate(
-      query.size,
-      (i) => _Element('#${query.start + i * _multiplier}'),
+  Future<Page<_Element>> get(Query<String> query) async {
+    return (
+      List.generate(
+        query.size,
+        (i) => _Element('#${query.start + i * _multiplier}'),
+      ),
+      metadata,
     );
   }
 
   final int _multiplier;
+  final Map<String, Object?>? metadata;
 }
 
 class _ErrorElementGateway implements PagedGateway<_Element, String> {
   const _ErrorElementGateway();
 
   @override
-  Future<Iterable<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(Query<String> query) async {
     return throw Exception();
   }
 }
@@ -775,8 +881,8 @@ class _NonReturningElementGateway implements PagedGateway<_Element, String> {
   const _NonReturningElementGateway();
 
   @override
-  Future<Iterable<_Element>> get(Query<String> query) async {
-    return Completer<Iterable<_Element>>().future;
+  Future<Page<_Element>> get(Query<String> query) async {
+    return Completer<Page<_Element>>().future;
   }
 }
 
@@ -784,11 +890,11 @@ class _DelegatingElementGateway implements PagedGateway<_Element, String> {
   const _DelegatingElementGateway(this._delegate);
 
   @override
-  Future<Iterable<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(Query<String> query) async {
     return _delegate(query);
   }
 
-  final Future<Iterable<_Element>> Function(Query<String> query) _delegate;
+  final Future<Page<_Element>> Function(Query<String> query) _delegate;
 }
 
 class _IncrementalDelegatingElementGateway
@@ -796,12 +902,12 @@ class _IncrementalDelegatingElementGateway
   _IncrementalDelegatingElementGateway(this._delegate);
 
   @override
-  Future<Iterable<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(Query<String> query) async {
     return _delegate(_count++, query);
   }
 
   var _count = 0;
-  final Future<Iterable<_Element>> Function(int, Query<String> query) _delegate;
+  final Future<Page<_Element>> Function(int, Query<String> query) _delegate;
 }
 
 class _FetchedFixture implements Fixture {
