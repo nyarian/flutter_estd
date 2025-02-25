@@ -75,3 +75,7 @@
 ## 0.0.19
 
 * Publish the "current" property from PageState, add metadata support to the PagedBloc
+
+## 0.0.20
+
+* Add "NoMetadataPagedGateway"
