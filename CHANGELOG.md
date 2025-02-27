@@ -79,3 +79,7 @@
 ## 0.0.20
 
 * Add "NoMetadataPagedGateway"
+
+## 0.0.21
+
+* Add prependAll support for PagedBloc

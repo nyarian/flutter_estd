@@ -828,6 +828,163 @@ void main() {
       );
     },
   );
+
+  group(
+    'prependAll: ',
+    () {
+      test(
+        'adds the elements',
+        () async {
+          const given = [_Element('#-2'), _Element('#-1')];
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..insertAll(0, given));
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'adds the elements for error state',
+        () async {
+          const given = [_Element('#-2'), _Element('#-1')];
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..insertAll(0, given));
+
+          final subject = createTestSubject(
+            initialData:
+                await const _ContinuousElementGateway().get(const Query.of('')),
+            gateway: const _ErrorElementGateway(),
+          );
+          await _PagedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<ErrorState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'adds the elements for fetching state',
+        () async {
+          const given = [_Element('#-2'), _Element('#-1')];
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..insertAll(0, given));
+
+          final subject = createTestSubject(
+            initialData:
+                await const _ContinuousElementGateway().get(const Query.of('')),
+            gateway: const _NonReturningElementGateway(),
+          );
+          await _PagedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchingState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'no change if the element is a duplicate of any existing',
+        () async {
+          final (given, _) =
+              await const _ContinuousElementGateway().get(const Query.of(''));
+          final expected = BuiltList.of(given);
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'prepends the cutoff non-duplicate tail',
+        () async {
+          const given = [
+            _Element('#-2'),
+            _Element('#-1'),
+            _Element('#0'),
+            _Element('#1'),
+          ];
+          final expected =
+              BuiltList.of(List.generate(22, (i) => _Element('#${i - 2}')));
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'prepends the cutoff non-duplicate tail, case 2',
+        () async {
+          const given = [
+            _Element('#-5'),
+            _Element('#-4'),
+            _Element('#-3'),
+            _Element('#-2'),
+            _Element('#-1'),
+            _Element('#0'),
+            _Element('#1'),
+            _Element('#2'),
+            _Element('#3'),
+          ];
+          final expected =
+              BuiltList.of(List.generate(25, (i) => _Element('#${i - 5}')));
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.prependAll(given);
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+    },
+  );
 }
 
 @immutable

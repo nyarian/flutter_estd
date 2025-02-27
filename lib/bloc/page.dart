@@ -27,7 +27,15 @@ class NaturalComparisonStrategy<T> implements ElementComparisonStrategy<T> {
 }
 
 abstract interface class ShortCircuitStrategy<T> {
-  List<T> shortCircuit({
+  List<T> prepend({
+    required ElementComparisonStrategy<T> strategy,
+    required BuiltList<T> current,
+    required Iterable<T> input,
+    required Iterable<T> currentHead,
+    required Iterable<T> inputHead,
+  });
+
+  List<T> append({
     required ElementComparisonStrategy<T> strategy,
     required BuiltList<T> current,
     required Iterable<T> input,
@@ -40,7 +48,18 @@ class LatestShortCircuitStrategy<T> implements ShortCircuitStrategy<T> {
   const LatestShortCircuitStrategy();
 
   @override
-  List<T> shortCircuit({
+  List<T> prepend({
+    required ElementComparisonStrategy<T> strategy,
+    required BuiltList<T> current,
+    required Iterable<T> input,
+    required Iterable<T> currentHead,
+    required Iterable<T> inputHead,
+  }) {
+    return inputHead.toList();
+  }
+
+  @override
+  List<T> append({
     required ElementComparisonStrategy<T> strategy,
     required BuiltList<T> current,
     required Iterable<T> input,
@@ -55,7 +74,31 @@ class RetainingShortCircuitStrategy<T> implements ShortCircuitStrategy<T> {
   const RetainingShortCircuitStrategy();
 
   @override
-  List<T> shortCircuit({
+  List<T> prepend({
+    required ElementComparisonStrategy<T> strategy,
+    required BuiltList<T> current,
+    required Iterable<T> input,
+    required Iterable<T> currentHead,
+    required Iterable<T> inputHead,
+  }) {
+    final inputList = inputHead.toList();
+    final result = <T>[];
+    for (final currentElement in currentHead) {
+      final index = inputList
+          .indexWhere((e) => strategy.isSameIdentity(e, currentElement));
+      if (index == -1) {
+        result.add(currentElement);
+      } else {
+        final newElement = inputList.removeAt(index);
+        result.add(strategy.defineNewer(currentElement, newElement));
+      }
+    }
+    result.insertAll(0, inputList);
+    return result;
+  }
+
+  @override
+  List<T> append({
     required ElementComparisonStrategy<T> strategy,
     required BuiltList<T> current,
     required Iterable<T> input,
@@ -130,7 +173,11 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
     _delegate.add(_AddEvent(elements, _strategy, _shortCircuit));
   }
 
-  void prepend(T element) => _delegate.add(_PrependEvent(element, _strategy));
+  void prepend(T element) =>
+      _delegate.add(_PrependEvent([element], _strategy, _shortCircuit));
+
+  void prependAll(Iterable<T> elements) =>
+      _delegate.add(_PrependEvent(elements, _strategy, _shortCircuit));
 
   void removeSingle(Predicate<T> predicate) {
     _delegate.add(_RemoveEvent(predicate));
@@ -201,7 +248,11 @@ sealed class PageState<T, Q> {
     return transitionErrorMsg("Can't append in $this");
   }
 
-  PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
+  PageState<T, Q> _prepend(
+    Iterable<T> source,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
     return transitionErrorMsg("Can't prepend in $this");
   }
 
@@ -214,33 +265,43 @@ sealed class PageState<T, Q> {
   }
 }
 
+BuiltList<T> _prependList<T>(
+  BuiltList<T>? current,
+  Iterable<T> source,
+  ElementComparisonStrategy<T> strategy,
+  ShortCircuitStrategy<T> shortCircuit,
+) {
+  return current?.let((e) => strategy._prepend(e, source, shortCircuit)) ??
+      BuiltList.of(source);
+}
+
 BuiltList<T> _appendList<T>(
   BuiltList<T>? current,
   Iterable<T> source,
   ElementComparisonStrategy<T> strategy,
   ShortCircuitStrategy<T> shortCircuit,
 ) {
-  return current?.let((e) => strategy._add(e, source, shortCircuit)) ??
+  return current?.let((e) => strategy._append(e, source, shortCircuit)) ??
       BuiltList.of(source);
 }
 
-BuiltList<T> _prependElement<T>(
-  BuiltList<T>? current,
-  T source,
-  ElementComparisonStrategy<T> strategy,
-) {
-  if (current == null) {
-    return BuiltList.of([source]);
-  } else {
-    final index = current.indexWhere((e) => strategy.isSameIdentity(e, source));
-    if (index == -1) {
-      return BuiltList.of(current.toList()..insert(0, source));
-    } else {
-      final newerRevision = strategy.defineNewer(current[index], source);
-      return BuiltList.of(current.toList()..[index] = newerRevision);
-    }
-  }
-}
+// BuiltList<T> _prependElement<T>(
+//   BuiltList<T>? current,
+//   T source,
+//   ElementComparisonStrategy<T> strategy,
+// ) {
+//   if (current == null) {
+//     return BuiltList.of([source]);
+//   } else {
+//  final index = current.indexWhere((e) => strategy.isSameIdentity(e, source));
+//     if (index == -1) {
+//       return BuiltList.of(current.toList()..insert(0, source));
+//     } else {
+//       final newerRevision = strategy.defineNewer(current[index], source);
+//       return BuiltList.of(current.toList()..[index] = newerRevision);
+//     }
+//   }
+// }
 
 BuiltList<T> _replaceElement<T>(
   BuiltList<T> source,
@@ -312,8 +373,8 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
-    final updated = _appendList(current, elements, strategy, shortCircuit);
-    return FetchedState(updated, metadata?.build(), query);
+    final result = _appendList(current, elements, strategy, shortCircuit);
+    return FetchedState(result, metadata?.build(), query);
   }
 
   @override
@@ -327,13 +388,17 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
-    final updated = _appendList(current, source, strategy, shortCircuit);
-    return FetchingState(updated, metadata, query);
+    final result = _appendList(current, source, strategy, shortCircuit);
+    return FetchingState(result, metadata, query);
   }
 
   @override
-  PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    final result = _prependElement(current, source, strategy);
+  PageState<T, Q> _prepend(
+    Iterable<T> source,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
+    final result = _prependList(current, source, strategy, shortCircuit);
     return FetchingState(result, metadata, query);
   }
 
@@ -388,14 +453,18 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
-    final updated = _appendList(current, source, strategy, shortCircuit);
-    return ErrorState(updated, metadata, cause, query);
+    final result = _appendList(current, source, strategy, shortCircuit);
+    return ErrorState(result, metadata, cause, query);
   }
 
   @override
-  PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    final prepended = _prependElement(current, source, strategy);
-    return ErrorState(prepended, metadata, cause, query);
+  PageState<T, Q> _prepend(
+    Iterable<T> source,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
+    final result = _prependList(current, source, strategy, shortCircuit);
+    return ErrorState(result, metadata, cause, query);
   }
 
   @override
@@ -457,14 +526,18 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     ElementComparisonStrategy<T> strategy,
     ShortCircuitStrategy<T> shortCircuit,
   ) {
-    final updated = _appendList(current, source, strategy, shortCircuit);
-    return FetchedState(updated, metadata, query);
+    final result = _appendList(current, source, strategy, shortCircuit);
+    return FetchedState(result, metadata, query);
   }
 
   @override
-  PageState<T, Q> _prepend(T source, ElementComparisonStrategy<T> strategy) {
-    final prepended = _prependElement(current, source, strategy);
-    return FetchedState(prepended, metadata, query);
+  PageState<T, Q> _prepend(
+    Iterable<T> source,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
+    final result = _prependList(current, source, strategy, shortCircuit);
+    return FetchedState(result, metadata, query);
   }
 
   @override
@@ -597,15 +670,16 @@ class _AddEvent<T, Q> implements Event<PageState<T, Q>> {
 
 @immutable
 class _PrependEvent<T, Q> implements Event<PageState<T, Q>> {
-  const _PrependEvent(this._element, this._strategy);
+  const _PrependEvent(this._source, this._strategy, this._shortCircuit);
 
   @override
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
-    yield state()._prepend(_element, _strategy);
+    yield state()._prepend(_source, _strategy, _shortCircuit);
   }
 
-  final T _element;
+  final Iterable<T> _source;
   final ElementComparisonStrategy<T> _strategy;
+  final ShortCircuitStrategy<T> _shortCircuit;
 }
 
 @immutable
@@ -620,8 +694,56 @@ class _RemoveEvent<T, Q> implements Event<PageState<T, Q>> {
   final Predicate<T> _predicate;
 }
 
-extension _Append<T> on ElementComparisonStrategy<T> {
-  BuiltList<T> _add(
+extension _ListApplication<T> on ElementComparisonStrategy<T> {
+  BuiltList<T> _prepend(
+    BuiltList<T> source,
+    Iterable<T> input,
+    ShortCircuitStrategy<T> strategy,
+  ) {
+    if (input.isEmpty) return source;
+    final element = input.last;
+    final identityIndex = source.indexWhere((e) => isSameIdentity(e, element));
+    final builtInput = BuiltList.of(input);
+    if (identityIndex == -1) {
+      return builtInput + source;
+    } else {
+      final head = <T>[];
+      var shortCircuited = false;
+      for (int i = identityIndex; i >= 0; i--) {
+        final current = source[i];
+        final update = builtInput[builtInput.length - 1 + i - identityIndex];
+        if (isSameIdentity(current, update)) {
+          head.insert(0, defineNewer(current, update));
+        } else {
+          final currentHead = source.sublist(0, i);
+          final inputHead = builtInput
+              .toList()
+              .sublist(0, builtInput.length - 1 + i - identityIndex);
+          final newHead = strategy.prepend(
+            strategy: this,
+            current: source,
+            input: input,
+            currentHead: currentHead,
+            inputHead: inputHead,
+          );
+          head.insertAll(0, newHead);
+          shortCircuited = true;
+          break;
+        }
+      }
+      if (!shortCircuited && builtInput.length > identityIndex + 1) {
+        head.insertAll(
+          0,
+          builtInput.sublist(0, builtInput.length - head.length),
+        );
+      }
+      final result = source.toList().sublist(identityIndex + 1)
+        ..insertAll(0, head);
+      return BuiltList.of(result);
+    }
+  }
+
+  BuiltList<T> _append(
     BuiltList<T> source,
     Iterable<T> input,
     ShortCircuitStrategy<T> strategy,
@@ -644,7 +766,7 @@ extension _Append<T> on ElementComparisonStrategy<T> {
         } else {
           final currentTail = source.sublist(identityIndex + i);
           final inputTail = builtInput.toList().sublist(i);
-          final newTail = strategy.shortCircuit(
+          final newTail = strategy.append(
             strategy: this,
             current: source,
             input: input,
