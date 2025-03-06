@@ -83,3 +83,7 @@
 ## 0.0.21
 
 * Add prependAll support for PagedBloc
+
+## 0.0.22
+
+* Make Optional a sealed class to enable pattern matching

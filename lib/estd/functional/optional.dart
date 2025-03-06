@@ -3,9 +3,9 @@ import 'package:meta/meta.dart';
 
 typedef IfEmpty<R> = R Function();
 
-abstract interface class Optional<T> {
+sealed class Optional<T> {
   factory Optional.ofNullable(T? value) =>
-      value == null ? Absent() : Present(value);
+      value == null ? const Absent() : Present(value);
 
   factory Optional.of(T value) = Present;
 
@@ -30,36 +30,59 @@ extension Get<T> on Optional<T> {
 
 @immutable
 class Present<T> implements Optional<T> {
-  Present(this._value) {
-    if (_value == null) throw ArgumentError.notNull("value");
-  }
+  const Present(this.value);
 
   @override
   Optional<R> map<R>(Transformation<T, R> transformation) =>
-      Present(transformation(_value));
+      Present(transformation(value));
 
   @override
   Optional<R> flatMap<R>(Transformation<T, Optional<R>> transformation) =>
-      transformation(_value);
+      transformation(value);
 
   @override
   R fold<R>(Transformation<T, R> ifPresent, IfEmpty<R> ifEmpty) =>
-      ifPresent(_value);
+      ifPresent(value);
 
-  final T _value;
+  final T value;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Present<T> && other.value == value;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  String toString() => 'Present(value: $value)';
 }
 
 @immutable
 class Absent<T> implements Optional<T> {
+  const Absent();
+
   @override
-  Optional<R> map<R>(Transformation<T, R> transformation) => Absent();
+  Optional<R> map<R>(Transformation<T, R> transformation) => const Absent();
 
   @override
   Optional<R> flatMap<R>(Transformation<T, Optional<R>> transformation) =>
-      Absent();
+      const Absent();
 
   @override
   R fold<R>(Transformation<T, R> ifPresent, IfEmpty<R> ifEmpty) => ifEmpty();
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) || other is Absent<T>;
+  }
+
+  @override
+  int get hashCode => 0;
+
+  @override
+  String toString() => 'Absent()';
 }
 
 extension Iterated<T> on Iterable<Optional<T>> {
