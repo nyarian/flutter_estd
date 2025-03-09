@@ -1,30 +1,6 @@
 import 'package:flutter_estd/estd/functional/std.dart';
 import 'package:flutter_estd/estd/tuple.dart';
 
-extension Windowed<E> on Iterable<E> {
-  Iterable<List<E>> window(int size) sync* {
-    if (size <= 0) throw ArgumentError.value(size, 'size', "can't be negative");
-    final Iterator<E> iterator = this.iterator;
-    while (iterator.moveNext()) {
-      final List<E> slice = [iterator.current];
-      for (int i = 1; i < size; i++) {
-        if (!iterator.moveNext()) break;
-        slice.add(iterator.current);
-      }
-      yield slice;
-    }
-  }
-}
-
-extension Nullable<E> on Iterable<E> {
-  E? firstOrNull(Predicate<E> predicate) {
-    for (final element in this) {
-      if (predicate(element)) return element;
-    }
-    return null;
-  }
-}
-
 typedef BiFunction<T, U, R> = R Function(T, U);
 
 extension United<E> on Iterable<E> {

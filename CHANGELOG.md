@@ -87,3 +87,7 @@
 ## 0.0.22
 
 * Make Optional a sealed class to enable pattern matching
+
+## 0.0.23
+
+* Remove the `firstOrNull` and `windowed` iterable extensions
