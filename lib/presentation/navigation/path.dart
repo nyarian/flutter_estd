@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_returning_this
 
 import 'package:built_collection/built_collection.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter_estd/estd/string.dart';
 import 'package:meta/meta.dart';
 
@@ -62,6 +63,15 @@ class URLPath {
     );
   }
 
+  URLPath? parent() {
+    final index = _path.lastIndexOf('/');
+    if (index == 0) {
+      return _path.length == 1 ? null : URLPath.root;
+    } else {
+      return URLPath(_path.substring(0, index));
+    }
+  }
+
   URLPath rootParent() {
     if (_path == root._path) {
       return URLPath(_path);
@@ -108,7 +118,8 @@ class URLPath {
     if (identical(this, other)) return true;
     return other is URLPath &&
         other._path == _path &&
-        other._queryParams == _queryParams;
+        const MapEquality<String, List<String>>()
+            .equals(_queryParams, other.queryParams);
   }
 
   @override

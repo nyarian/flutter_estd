@@ -54,4 +54,31 @@ void main() {
       timeout: const Timeout(Duration(seconds: 1)),
     );
   });
+
+  group(
+    'parent',
+    () {
+      test(
+        'returns null for the root path',
+        () {
+          final path = URLPath.root;
+          expect(null, path.parent());
+        },
+      );
+      test(
+        'returns root for the root descendant',
+        () {
+          final path = URLPath.root.append('test');
+          expect(URLPath.root, path.parent());
+        },
+      );
+      test(
+        'returns previous path for the level 2 descendant',
+        () {
+          final path = URLPath.root.append('parent').append('child');
+          expect(URLPath.root.append('parent'), path.parent());
+        },
+      );
+    },
+  );
 }

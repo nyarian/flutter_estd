@@ -91,3 +91,7 @@
 ## 0.0.23
 
 * Remove the `firstOrNull` and `windowed` iterable extensions
+
+## 0.0.24
+
+* Add the `parent()` method to URLPath
