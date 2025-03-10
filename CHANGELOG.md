@@ -95,3 +95,7 @@
 ## 0.0.24
 
 * Add the `parent()` method to URLPath
+
+## 0.0.24
+
+* Change the `ApplicationRouter`'s `location` type to `URLPath`
