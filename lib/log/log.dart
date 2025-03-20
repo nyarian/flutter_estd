@@ -3,7 +3,7 @@ import 'dart:async';
 abstract interface class Log {
   void log(String message);
 
-  void logError(Object error, [StackTrace trace]);
+  void logError(Object error, [StackTrace? trace]);
 }
 
 class NoOpLog implements Log {

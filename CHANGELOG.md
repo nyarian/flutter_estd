@@ -96,6 +96,10 @@
 
 * Add the `parent()` method to URLPath
 
-## 0.0.24
+## 0.0.25
 
 * Change the `ApplicationRouter`'s `location` type to `URLPath`
+
+## 0.0.26
+
+* Make the `Log`'s `trace` nullable
