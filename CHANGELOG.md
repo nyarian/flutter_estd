@@ -103,3 +103,9 @@
 ## 0.0.26
 
 * Make the `Log`'s `trace` nullable
+
+## 0.0.27
+
+* Add the `http` dependency
+* Exclude `http`'s `ClientException` from crash causes
+* Add minimal versions for all the transitive dependencies

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/painting.dart';
+import 'package:http/http.dart';
 
 abstract interface class FlutterErrorHandlingPolicy {
   void call(FlutterErrorDetails details);
@@ -38,7 +39,8 @@ class ExitOnMobileReleasePolicy implements FlutterErrorHandlingPolicy {
     if (kReleaseMode &&
         !kIsWeb &&
         details.exception is! SocketException &&
-        details.exception is! NetworkImageLoadException) {
+        details.exception is! NetworkImageLoadException &&
+        details.exception is! ClientException) {
       exit(1);
     }
   }
