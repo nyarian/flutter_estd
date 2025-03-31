@@ -113,3 +113,7 @@
 ## 0.0.28
 
 * Make StreamTransformerBloc safe in terms of event addition
+
+## 0.0.29
+
+* Relax the ResultBloc's state transitions (allow success -> processing)

@@ -105,6 +105,9 @@ class SuccessState<T> extends ResultState<T> {
   @override
   ResultState<T> _idle() => IdleState<T>();
 
+  @override
+  ResultState<T> _processing() => ProcessingState<T>();
+
   final T result;
 
   @override
