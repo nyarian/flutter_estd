@@ -16,7 +16,9 @@ class MutationBloc<T> implements Bloc<MutationState<T>> {
 
   void patch(Transformation<T, T> patch) => _delegate.add(_PatchEvent(patch));
 
-  void clearError() => _delegate.add(_ClearErrorEvent());
+  void clearError({bool isSafe = false}) {
+    _delegate.add(_ClearErrorEvent(isSafe: isSafe));
+  }
 
   @override
   MutationState<T> currentState() => _delegate.currentState();
@@ -86,7 +88,7 @@ sealed class MutationState<T> {
   MutationState<T> _mutationError(Object error, [T? partial]) =>
       transitionError(MutationErrorState);
 
-  MutationState<T> _clearError() =>
+  MutationState<T> _clearError({required bool isSafe}) =>
       transitionErrorMsg("Can't clear error for $this");
 }
 
@@ -163,6 +165,11 @@ class FetchingState<T> extends MutationState<T> {
   @override
   MutationState<T> _fetchError(Object error) => FetchErrorState(current, error);
 
+  @override
+  MutationState<T> _clearError({required bool isSafe}) {
+    return isSafe ? this : super._clearError(isSafe: isSafe);
+  }
+
   final T? current;
 
   @override
@@ -196,6 +203,11 @@ class FetchedState<T> extends MutationState<T> {
   @override
   MutatingState<T> _mutating() => MutatingState(result);
 
+  @override
+  MutationState<T> _clearError({required bool isSafe}) {
+    return isSafe ? this : super._clearError(isSafe: isSafe);
+  }
+
   final T result;
 
   @override
@@ -219,8 +231,9 @@ class FetchErrorState<T> extends MutationState<T> {
   MutationState<T> _fetching() => FetchingState(current);
 
   @override
-  MutationState<T> _clearError() {
+  MutationState<T> _clearError({required bool isSafe}) {
     if (current == null) {
+      if (isSafe) return this;
       throw StateError(
         "Can't clear an error for a state without the fallback: $this",
       );
@@ -270,6 +283,11 @@ class MutatingState<T> extends MutationState<T> {
   MutationState<T> _mutationError(Object error, [T? partial]) =>
       MutationErrorState(partial ?? current, error);
 
+  @override
+  MutationState<T> _clearError({required bool isSafe}) {
+    return isSafe ? this : super._clearError(isSafe: isSafe);
+  }
+
   final T current;
 
   @override
@@ -303,6 +321,11 @@ class MutatedState<T> extends MutationState<T> {
     return MutatedState(transformation(result));
   }
 
+  @override
+  MutationState<T> _clearError({required bool isSafe}) {
+    return isSafe ? this : super._clearError(isSafe: isSafe);
+  }
+
   final T result;
 
   @override
@@ -332,7 +355,7 @@ class MutationErrorState<T> extends MutationState<T> {
   }
 
   @override
-  MutationState<T> _clearError() => MutatedState(current);
+  MutationState<T> _clearError({required bool isSafe}) => MutatedState(current);
 
   final T current;
   final Object error;
@@ -547,12 +570,14 @@ class _PatchEvent<T> implements Event<MutationState<T>> {
 }
 
 class _ClearErrorEvent<T> implements Event<MutationState<T>> {
-  _ClearErrorEvent();
+  _ClearErrorEvent({required bool isSafe}) : _isSafe = isSafe;
 
   @override
   Stream<MutationState<T>> fold(Producer<MutationState<T>> state) async* {
-    yield state()._clearError();
+    yield state()._clearError(isSafe: _isSafe);
   }
+
+  final bool _isSafe;
 }
 
 final class IsMutated<T> extends AdHocMutationStateVisitor<T, bool> {

@@ -117,3 +117,7 @@
 ## 0.0.29
 
 * Relax the ResultBloc's state transitions (allow success -> processing)
+
+## 0.0.30
+
+* Add safe error clear option for MutationBloc
