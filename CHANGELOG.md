@@ -109,3 +109,7 @@
 * Add the `http` dependency
 * Exclude `http`'s `ClientException` from crash causes
 * Add minimal versions for all the transitive dependencies
+
+## 0.0.28
+
+* Make StreamTransformerBloc safe in terms of event addition

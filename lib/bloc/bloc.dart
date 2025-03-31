@@ -72,7 +72,9 @@ class StreamTransformerBloc<S> implements MutableBloc<S> {
     if (stateTransformer != null) {
       states = stateTransformer(states);
     }
-    _subscription = states.listen(_stateSubject.add)
+    _subscription = states.listen((e) {
+      if (!_stateSubject.isClosed) _stateSubject.add(e);
+    })
       ..onError(_stateSubject.addError);
   }
 
