@@ -6,11 +6,15 @@ class DynamicSpanText extends StatelessWidget {
   final List<DynamicSpanTextReplacement> spans;
   final TextAlign textAlign;
   final TextStyle? style;
+  final int? maxLines;
+  final TextOverflow overflow;
 
   const DynamicSpanText({
     required this.text,
     required this.spans,
     this.textAlign = TextAlign.start,
+    this.overflow = TextOverflow.clip,
+    this.maxLines,
     this.style,
     super.key,
   });
@@ -25,6 +29,8 @@ class DynamicSpanText extends StatelessWidget {
     }
     return RichText(
       textAlign: textAlign,
+      maxLines: maxLines,
+      overflow: overflow,
       text: TextSpan(style: style, children: spans),
     );
   }
@@ -53,7 +59,9 @@ class DynamicSpanText extends StatelessWidget {
       ..add(StringProperty('text', text))
       ..add(IterableProperty('spans', spans))
       ..add(EnumProperty('textAlign', textAlign))
-      ..add(DiagnosticsProperty('style', style));
+      ..add(DiagnosticsProperty('style', style))
+      ..add(IntProperty('maxLines', maxLines))
+      ..add(EnumProperty('overflow', overflow));
   }
 }
 

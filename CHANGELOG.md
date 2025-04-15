@@ -121,3 +121,7 @@
 ## 0.0.30
 
 * Add safe error clear option for MutationBloc
+
+## 0.0.31
+
+* Add `maxLines` and `overflow` as parameters to `DynamicSpanText`
