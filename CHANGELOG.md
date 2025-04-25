@@ -125,3 +125,7 @@
 ## 0.0.31
 
 * Add `maxLines` and `overflow` as parameters to `DynamicSpanText`
+
+## 0.0.31
+
+* Fix `HttpServiceUri` to parse subpaths properly

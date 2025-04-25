@@ -34,7 +34,7 @@ class HttpServiceUri {
   final Scheme _scheme;
 
   static final _regex =
-      RegExp('(https|http)://([a-z0-9.-]+(:[0-9]+)?)/([a-z0-9-_]+/)?');
+      RegExp('(https|http)://([a-z0-9.-]+(:[0-9]+)?)/([a-z0-9-_/]+)?');
 }
 
 enum Scheme { http, https }
