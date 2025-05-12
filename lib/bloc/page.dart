@@ -231,6 +231,7 @@ sealed class PageState<T, Q> {
       transitionErrorMsg("Can't transit to fetching state from $this");
 
   PageState<T, Q> _fetched(
+    Query<Q> query,
     Iterable<T> elements,
     Map<String, Object?>? metadata,
     ElementComparisonStrategy<T> strategy,
@@ -239,7 +240,7 @@ sealed class PageState<T, Q> {
     return transitionErrorMsg("Can't transit to fetched state from $this");
   }
 
-  PageState<T, Q> _failure(Object cause) =>
+  PageState<T, Q> _failure(Query<Q> query, Object cause) =>
       transitionErrorMsg("Can't transit to failure state from $this");
 
   PageState<T, Q> _append(
@@ -370,6 +371,7 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
 
   @override
   PageState<T, Q> _fetched(
+    Query<Q> query,
     Iterable<T> elements,
     Map<String, Object?>? metadata,
     ElementComparisonStrategy<T> strategy,
@@ -380,7 +382,7 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _failure(Object cause) {
+  PageState<T, Q> _failure(Query<Q> query, Object cause) {
     return ErrorState(current, metadata, cause, query);
   }
 
@@ -480,6 +482,27 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   @override
+  PageState<T, Q> _fetched(
+    Query<Q> query,
+    Iterable<T> elements,
+    Map<String, Object?>? metadata,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
+    if (query == this.query) {
+      return this;
+    } else {
+      return this.query.start <= query.start
+          ? this
+          : FetchedState(
+              BuiltList.of(elements),
+              metadata?.build(),
+              query,
+            );
+    }
+  }
+
+  @override
   final BuiltList<T>? current;
   @override
   final BuiltMap<String, Object?>? metadata;
@@ -546,6 +569,27 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
     final replaced = _replaceElement(current, source, predicate);
     return FetchedState(replaced, metadata, query);
+  }
+
+  @override
+  PageState<T, Q> _fetched(
+    Query<Q> query,
+    Iterable<T> elements,
+    Map<String, Object?>? metadata,
+    ElementComparisonStrategy<T> strategy,
+    ShortCircuitStrategy<T> shortCircuit,
+  ) {
+    if (query == this.query) {
+      return this;
+    } else {
+      return this.query.start <= query.start
+          ? this
+          : FetchedState(
+              BuiltList.of(elements),
+              metadata?.build(),
+              query,
+            );
+    }
   }
 
   @override
@@ -623,9 +667,10 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
     yield state()._fetching(_query);
     try {
       final (elements, metadata) = await _gateway.get(_query);
-      yield state()._fetched(elements, metadata, _strategy, _shortCircuit);
+      yield state()
+          ._fetched(_query, elements, metadata, _strategy, _shortCircuit);
     } on Object catch (e) {
-      yield state()._failure(e);
+      yield state()._failure(_query, e);
     }
   }
 

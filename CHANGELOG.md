@@ -133,3 +133,7 @@
 ## 0.0.33
 
 * Publish the stream transformer as a constructor property for PageBloc
+
+## 0.0.34
+
+* Add concurrency support to PagedBloc (graceful FetchedState transition for non-loading states)
