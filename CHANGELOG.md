@@ -126,6 +126,10 @@
 
 * Add `maxLines` and `overflow` as parameters to `DynamicSpanText`
 
-## 0.0.31
+## 0.0.32
 
 * Fix `HttpServiceUri` to parse subpaths properly
+
+## 0.0.33
+
+* Publish the stream transformer as a constructor property for PageBloc

@@ -130,10 +130,12 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
     int pageSize = Query.defaultSize,
     ElementComparisonStrategy<T>? strategy,
     ShortCircuitStrategy<T>? shortCircuit,
+    TransformerFactory<Event<PageState<T, Q>>, PageState<T, Q>>? transformer,
   })  : _pageSize = pageSize,
         _strategy = strategy ?? NaturalComparisonStrategy<T>(),
         _shortCircuit = shortCircuit ?? LatestShortCircuitStrategy<T>(),
-        _delegate = StreamTransformerBloc.mix(
+        _delegate = StreamTransformerBloc(
+          transformer ?? FlatMapTransformerFactory(),
           initialState: initialData == null
               ? FetchingState(null, null, firstQuery)
               : FetchedState(
