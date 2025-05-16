@@ -35,14 +35,14 @@ class MutationBloc<T> implements Bloc<MutationState<T>> {
 abstract interface class FetchGateway<T> {
   factory FetchGateway.run(Producer<Future<T>> producer) = LambdaFetchGateway;
 
-  Future<T> fetch();
+  Future<T> fetch(T? current);
 }
 
 class LambdaFetchGateway<T> implements FetchGateway<T> {
   const LambdaFetchGateway(this._producer);
 
   @override
-  Future<T> fetch() => _producer();
+  Future<T> fetch(T? current) => _producer();
 
   final Producer<Future<T>> _producer;
 }
@@ -528,7 +528,14 @@ class _FetchEvent<T> implements Event<MutationState<T>> {
   Stream<MutationState<T>> fold(Producer<MutationState<T>> state) async* {
     yield state()._fetching();
     try {
-      final result = await _gateway.fetch();
+      final result = await _gateway.fetch(switch (state()) {
+        FetchingState(:var current) || FetchErrorState(:var current) => current,
+        FetchedState(result: var current) ||
+        MutatingState(:var current) ||
+        MutatedState(result: var current) ||
+        MutationErrorState(:var current) =>
+          current,
+      });
       yield state()._fetched(result);
     } on Object catch (e) {
       yield state()._fetchError(e);

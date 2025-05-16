@@ -137,3 +137,7 @@
 ## 0.0.34
 
 * Add concurrency support to PagedBloc (graceful FetchedState transition for non-loading states)
+
+## 0.0.35
+
+* Add the current state to MutationBloc#Gateway#Fetch
