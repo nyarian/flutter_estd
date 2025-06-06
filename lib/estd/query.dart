@@ -19,7 +19,7 @@ class Query<T> {
   }
 
   bool prolongs(Query<T> previous) {
-    return previous.value == value && start > previous.start;
+    return previous.value == value && start >= previous.start;
   }
 
   Query<T> shift(int offset) => Query(value: value, start: start + offset);

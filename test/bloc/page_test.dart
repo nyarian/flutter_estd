@@ -985,6 +985,101 @@ void main() {
       );
     },
   );
+
+  group(
+    'remove: ',
+    () {
+      test(
+        'removes the element',
+        () async {
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..removeAt(0));
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.removeSingle((e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'removes the element for error state',
+        () async {
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..removeAt(0));
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.removeSingle((e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'removes the element for fetching state',
+        () async {
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..removeAt(0));
+
+          final subject = createTestSubject(
+            initialData:
+                await const _ContinuousElementGateway().get(const Query.of('')),
+            gateway: const _NonReturningElementGateway(),
+          );
+          await _PagedFixture(subject).prepare();
+          subject.removeSingle((e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchingState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'no change if the element is not present',
+        () async {
+          final (given, _) =
+              await const _ContinuousElementGateway().get(const Query.of(''));
+          final expected = BuiltList.of(given);
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.removeSingle((e) => e.name == 'does not exist');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+    },
+  );
 }
 
 @immutable

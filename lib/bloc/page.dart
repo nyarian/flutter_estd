@@ -142,6 +142,7 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
                   BuiltList.of(initialData.$1),
                   initialData.$2?.build(),
                   firstQuery,
+                  hasMore: true,
                 ),
           initialEvent: initialData == null
               ? _QueryEvent(
@@ -319,6 +320,18 @@ BuiltList<T> _replaceElement<T>(
   }
 }
 
+BuiltList<T> _removeElement<T>(
+  BuiltList<T> source,
+  final Predicate<T> predicate,
+) {
+  final index = source.indexWhere(predicate);
+  if (index == -1) {
+    return source;
+  } else {
+    return BuiltList(source.toList()..removeAt(index));
+  }
+}
+
 abstract interface class PageStateVisitor<T, Q, R> {
   R fetching(Query<Q> query);
 
@@ -378,7 +391,12 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final result = _appendList(current, elements, strategy, shortCircuit);
-    return FetchedState(result, metadata?.build(), query);
+    return FetchedState(
+      result,
+      metadata?.build(),
+      query,
+      hasMore: elements.length == (query.size - query.start),
+    );
   }
 
   @override
@@ -409,6 +427,12 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   @override
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
     final result = current?.let((e) => _replaceElement(e, source, predicate));
+    return FetchingState(result, metadata, query);
+  }
+
+  @override
+  PageState<T, Q> _remove(Predicate<T> predicate) {
+    final result = current?.let((e) => _removeElement(e, predicate));
     return FetchingState(result, metadata, query);
   }
 
@@ -482,6 +506,12 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   @override
+  PageState<T, Q> _remove(Predicate<T> predicate) {
+    final result = current?.let((e) => _removeElement(e, predicate));
+    return ErrorState(result, metadata, cause, query);
+  }
+
+  @override
   PageState<T, Q> _fetched(
     Query<Q> query,
     Iterable<T> elements,
@@ -498,6 +528,7 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
               BuiltList.of(elements),
               metadata?.build(),
               query,
+              hasMore: elements.length == (query.size - query.start),
             );
     }
   }
@@ -531,7 +562,12 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
 
 @immutable
 final class FetchedState<T, Q> extends PageState<T, Q> {
-  const FetchedState(this.current, this.metadata, this.query);
+  const FetchedState(
+    this.current,
+    this.metadata,
+    this.query, {
+    required this.hasMore,
+  });
 
   @override
   R visit<R>(PageStateVisitor<T, Q, R> visitor) {
@@ -552,7 +588,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final result = _appendList(current, source, strategy, shortCircuit);
-    return FetchedState(result, metadata, query);
+    return FetchedState(result, metadata, query, hasMore: hasMore);
   }
 
   @override
@@ -562,13 +598,19 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     ShortCircuitStrategy<T> shortCircuit,
   ) {
     final result = _prependList(current, source, strategy, shortCircuit);
-    return FetchedState(result, metadata, query);
+    return FetchedState(result, metadata, query, hasMore: hasMore);
   }
 
   @override
   PageState<T, Q> _replace(T source, Predicate<T> predicate) {
     final replaced = _replaceElement(current, source, predicate);
-    return FetchedState(replaced, metadata, query);
+    return FetchedState(replaced, metadata, query, hasMore: hasMore);
+  }
+
+  @override
+  PageState<T, Q> _remove(Predicate<T> predicate) {
+    final result = _removeElement(current, predicate);
+    return FetchedState(result, metadata, query, hasMore: hasMore);
   }
 
   @override
@@ -588,6 +630,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
               BuiltList.of(elements),
               metadata?.build(),
               query,
+              hasMore: elements.length == (query.size - query.start),
             );
     }
   }
@@ -598,7 +641,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   final BuiltMap<String, Object?>? metadata;
   @override
   final Query<Q> query;
-  bool get hasMore => query.start + query.size <= current.length;
+  final bool hasMore;
 
   @override
   bool operator ==(Object other) {
@@ -606,15 +649,17 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
     return other is FetchedState<T, Q> &&
         other.current == current &&
         other.metadata == metadata &&
-        other.query == query;
+        other.query == query &&
+        other.hasMore == hasMore;
   }
 
   @override
-  int get hashCode => current.hashCode ^ metadata.hashCode ^ query.hashCode;
+  int get hashCode =>
+      current.hashCode ^ metadata.hashCode ^ query.hashCode ^ hasMore.hashCode;
 
   @override
   String toString() => 'FetchedState(current: $current, metadata: $metadata, '
-      'query: $query)';
+      'query: $query, hasMore: $hasMore)';
 }
 
 class _PageEvent<T, Q> implements Event<PageState<T, Q>> {

@@ -141,3 +141,7 @@
 ## 0.0.35
 
 * Add the current state to MutationBloc#Gateway#Fetch
+
+## 0.0.36
+
+* Rework the paging `hasMore`, add the `removeSingle` implementation
