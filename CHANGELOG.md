@@ -145,3 +145,7 @@
 ## 0.0.36
 
 * Rework the paging `hasMore`, add the `removeSingle` implementation
+
+## 0.0.37
+
+* Fix the paging issue for PageBloc

@@ -1,6 +1,6 @@
 name: flutter_estd
 description: Opinionated ESTD for Flutter projects.
-version: 0.0.36
+version: 0.0.37
 homepage: https://github.com/nyarian/flutter_estd
 
 environment:

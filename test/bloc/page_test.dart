@@ -1080,6 +1080,40 @@ void main() {
       );
     },
   );
+
+  group(
+    'hasMore',
+    () {
+      test(
+        'hasMore on initial fetch',
+        () async {
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+
+          expect(
+            subject.state(),
+            emitsThrough(
+                predicate<FetchedState<_Element, String>>((e) => e.hasMore)),
+          );
+        },
+      );
+
+      test(
+        'hasMore on second fetch',
+        () async {
+          final subject = createTestSubject();
+          await _PagedFixture(subject).prepare();
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.query.start == 20 && e.hasMore)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+    },
+  );
 }
 
 @immutable

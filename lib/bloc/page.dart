@@ -395,7 +395,7 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
       result,
       metadata?.build(),
       query,
-      hasMore: elements.length == (query.size - query.start),
+      hasMore: elements.length >= query.size,
     );
   }
 
@@ -528,7 +528,7 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
               BuiltList.of(elements),
               metadata?.build(),
               query,
-              hasMore: elements.length == (query.size - query.start),
+              hasMore: elements.length >= query.size,
             );
     }
   }
@@ -630,7 +630,7 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
               BuiltList.of(elements),
               metadata?.build(),
               query,
-              hasMore: elements.length == (query.size - query.start),
+              hasMore: elements.length >= query.size,
             );
     }
   }
