@@ -3,28 +3,29 @@ import 'package:flutter_estd/bloc/state.dart';
 import 'package:flutter_estd/estd/functional/std.dart';
 import 'package:meta/meta.dart';
 
-class ResultBloc<T> implements Bloc<ResultState<T>> {
+class ResultBloc<T, R> implements Bloc<ResultState<T, R>> {
   ResultBloc()
       : _delegate = StreamTransformerBloc.ordered(
-          initialState: IdleState<T>(),
+          initialState: IdleState<T, R>(),
         );
 
-  void run(Supplier<T> supplier) => _delegate.add(_Run(supplier));
+  void run(Supplier<R> supplier, [T? argument]) =>
+      _delegate.add(_Run(argument, supplier));
 
-  void onErrorProcessed() => _delegate.add(_RevertToIdle<T>());
+  void onErrorProcessed() => _delegate.add(_RevertToIdle<T, R>());
 
-  void onSuccessProcessed() => _delegate.add(_RevertToIdle<T>());
-
-  @override
-  Stream<ResultState<T>> state() => _delegate.state();
+  void onSuccessProcessed() => _delegate.add(_RevertToIdle<T, R>());
 
   @override
-  ResultState<T> currentState() => _delegate.currentState();
+  Stream<ResultState<T, R>> state() => _delegate.state();
+
+  @override
+  ResultState<T, R> currentState() => _delegate.currentState();
 
   @override
   void release() => _delegate.release();
 
-  final MutableBloc<ResultState<T>> _delegate;
+  final MutableBloc<ResultState<T, R>> _delegate;
 }
 
 abstract interface class Supplier<T> {
@@ -41,24 +42,25 @@ class LambdaSupplier<T> implements Supplier<T> {
   final Future<T> Function() _function;
 }
 
-sealed class ResultState<T> {
+sealed class ResultState<T, R> {
   const ResultState();
-  R visit<R>(OperationStateVisitor<T, R> visitor);
-  ResultState<T> _idle() => transitionError(IdleState);
-  ResultState<T> _processing() => transitionError(ProcessingState);
-  ResultState<T> _error(Object cause) => transitionError(ErrorState);
-  ResultState<T> _success(T result) => transitionError(SuccessState);
+  U visit<U>(OperationStateVisitor<T, R, U> visitor);
+  ResultState<T, R> _idle() => transitionError(IdleState);
+  ResultState<T, R> _processing(T? argument) =>
+      transitionError(ProcessingState);
+  ResultState<T, R> _error(Object cause) => transitionError(ErrorState);
+  ResultState<T, R> _success(R result) => transitionError(SuccessState);
 }
 
 @immutable
-class IdleState<T> extends ResultState<T> {
+class IdleState<T, R> extends ResultState<T, R> {
   const IdleState();
 
   @override
-  R visit<R>(OperationStateVisitor<T, R> visitor) => visitor.idle();
+  U visit<U>(OperationStateVisitor<T, R, U> visitor) => visitor.idle();
 
   @override
-  ResultState<T> _processing() => ProcessingState<T>();
+  ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
 
   @override
   bool operator ==(Object other) =>
@@ -72,100 +74,113 @@ class IdleState<T> extends ResultState<T> {
 }
 
 @immutable
-class ProcessingState<T> extends ResultState<T> {
-  const ProcessingState();
+class ProcessingState<T, R> extends ResultState<T, R> {
+  const ProcessingState([this.argument]);
 
   @override
-  R visit<R>(OperationStateVisitor<T, R> visitor) => visitor.processing();
+  U visit<U>(OperationStateVisitor<T, R, U> visitor) =>
+      visitor.processing(argument);
 
   @override
-  ResultState<T> _success(T result) => SuccessState(result);
+  ResultState<T, R> _success(R result) => SuccessState(result, argument);
 
   @override
-  ResultState<T> _error(Object cause) => ErrorState(cause);
+  ResultState<T, R> _error(Object cause) => ErrorState(cause, argument);
 
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) || other is ProcessingState;
-
-  @override
-  int get hashCode => 0;
-
-  @override
-  String toString() => 'ProcessingState()';
-}
-
-@immutable
-class SuccessState<T> extends ResultState<T> {
-  const SuccessState(this.result);
-
-  @override
-  R visit<R>(OperationStateVisitor<T, R> visitor) => visitor.success(result);
-
-  @override
-  ResultState<T> _idle() => IdleState<T>();
-
-  @override
-  ResultState<T> _processing() => ProcessingState<T>();
-
-  final T result;
+  final T? argument;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is SuccessState<T> && other.result == result;
+    return other is ProcessingState<T, R> && other.argument == argument;
   }
 
   @override
-  int get hashCode => result.hashCode;
+  int get hashCode => argument.hashCode;
 
   @override
-  String toString() => 'SuccessState(result: $result)';
+  String toString() => 'ProcessingState(argument: $argument)';
 }
 
 @immutable
-class ErrorState<T> extends ResultState<T> {
-  const ErrorState(this.cause);
+class SuccessState<T, R> extends ResultState<T, R> {
+  const SuccessState(this.result, [this.argument]);
 
   @override
-  R visit<R>(OperationStateVisitor<T, R> visitor) => visitor.error(cause);
+  U visit<U>(OperationStateVisitor<T, R, U> visitor) =>
+      visitor.success(result, argument);
 
   @override
-  ResultState<T> _idle() => IdleState<T>();
+  ResultState<T, R> _idle() => IdleState<T, R>();
 
   @override
-  ResultState<T> _processing() => ProcessingState<T>();
+  ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
+
+  final R result;
+  final T? argument;
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SuccessState<T, R> &&
+        other.result == result &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode => result.hashCode ^ argument.hashCode;
+
+  @override
+  String toString() => 'SuccessState(result: $result, argument: $argument)';
+}
+
+@immutable
+class ErrorState<T, R> extends ResultState<T, R> {
+  const ErrorState(this.cause, [this.argument]);
+
+  @override
+  U visit<U>(OperationStateVisitor<T, R, U> visitor) =>
+      visitor.error(cause, argument);
+
+  @override
+  ResultState<T, R> _idle() => IdleState<T, R>();
+
+  @override
+  ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
 
   final Object cause;
+  final T? argument;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
-    return other is ErrorState && other.cause == cause;
+    return other is ErrorState &&
+        other.cause == cause &&
+        other.argument == argument;
   }
 
   @override
-  int get hashCode => cause.hashCode;
+  int get hashCode => cause.hashCode ^ argument.hashCode;
 
   @override
-  String toString() => 'ErrorState(cause: $cause)';
+  String toString() => 'ErrorState(cause: $cause, argument: $argument)';
 }
 
-abstract interface class OperationStateVisitor<T, R> {
-  R idle();
-  R processing();
-  R success(T result);
-  R error(Object cause);
+abstract interface class OperationStateVisitor<T, R, U> {
+  U idle();
+  U processing([T? argument]);
+  U success(R result, [T? argument]);
+  U error(Object cause, [T? argument]);
 }
 
-class _Run<T> implements Event<ResultState<T>> {
-  const _Run(this._operation);
+class _Run<T, R> implements Event<ResultState<T, R>> {
+  const _Run(this._argument, this._operation);
 
   @override
-  Stream<ResultState<T>> fold(
-    Producer<ResultState<T>> currentState,
+  Stream<ResultState<T, R>> fold(
+    Producer<ResultState<T, R>> currentState,
   ) async* {
-    yield currentState()._processing();
+    yield currentState()._processing(_argument);
     try {
       yield currentState()._success(await _operation.run());
     } on Object catch (e) {
@@ -173,15 +188,16 @@ class _Run<T> implements Event<ResultState<T>> {
     }
   }
 
-  final Supplier<T> _operation;
+  final T? _argument;
+  final Supplier<R> _operation;
 }
 
-class _RevertToIdle<T> implements Event<ResultState<T>> {
+class _RevertToIdle<T, R> implements Event<ResultState<T, R>> {
   const _RevertToIdle();
 
   @override
-  Stream<ResultState<T>> fold(
-    Producer<ResultState<T>> currentState,
+  Stream<ResultState<T, R>> fold(
+    Producer<ResultState<T, R>> currentState,
   ) async* {
     yield currentState()._idle();
   }

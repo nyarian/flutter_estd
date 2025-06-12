@@ -149,3 +149,7 @@
 ## 0.0.37
 
 * Fix the paging issue for PageBloc
+
+## 0.0.38
+
+* Introduce the optional argument to the ResultState
