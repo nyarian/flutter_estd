@@ -182,8 +182,8 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
   void prependAll(Iterable<T> elements) =>
       _delegate.add(_PrependEvent(elements, _strategy, _shortCircuit));
 
-  void removeSingle(Predicate<T> predicate) {
-    _delegate.add(_RemoveEvent(predicate));
+  void removeSingle(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+    _delegate.add(_RemoveEvent(predicate, patch));
   }
 
   @override
@@ -264,10 +264,17 @@ sealed class PageState<T, Q> {
     return transitionErrorMsg("Can't replace in $this");
   }
 
-  PageState<T, Q> _remove(Predicate<T> predicate) {
+  // False positive from the linter?
+  // ignore: unused_element_parameter
+  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
     return transitionErrorMsg("Can't remove in $this");
   }
 }
+
+typedef MetadataPatch<T> = Map<String, Object?>? Function(
+  List<T> updated,
+  BuiltMap<String, Object?>? metadata,
+);
 
 BuiltList<T> _prependList<T>(
   BuiltList<T>? current,
@@ -320,15 +327,17 @@ BuiltList<T> _replaceElement<T>(
   }
 }
 
-BuiltList<T> _removeElement<T>(
+(T?, BuiltList<T>) _removeElement<T>(
   BuiltList<T> source,
   final Predicate<T> predicate,
 ) {
   final index = source.indexWhere(predicate);
   if (index == -1) {
-    return source;
+    return (null, source);
   } else {
-    return BuiltList(source.toList()..removeAt(index));
+    final result = source.toList();
+    final element = result.removeAt(index);
+    return (element, BuiltList(result));
   }
 }
 
@@ -431,9 +440,20 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate) {
-    final result = current?.let((e) => _removeElement(e, predicate));
-    return FetchingState(result, metadata, query);
+  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+    final current = this.current;
+    if (current == null) {
+      return FetchingState(current, metadata, query);
+    } else {
+      final (element, result) = _removeElement(current, predicate);
+      return FetchingState(
+        result,
+        patch == null || element == null
+            ? metadata
+            : patch([element], metadata)?.build(),
+        query,
+      );
+    }
   }
 
   @override
@@ -506,9 +526,21 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate) {
-    final result = current?.let((e) => _removeElement(e, predicate));
-    return ErrorState(result, metadata, cause, query);
+  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+    final current = this.current;
+    if (current == null) {
+      return FetchingState(current, metadata, query);
+    } else {
+      final (element, result) = _removeElement(current, predicate);
+      return ErrorState(
+        result,
+        patch == null || element == null
+            ? metadata
+            : patch([element], metadata)?.build(),
+        cause,
+        query,
+      );
+    }
   }
 
   @override
@@ -608,9 +640,16 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate) {
-    final result = _removeElement(current, predicate);
-    return FetchedState(result, metadata, query, hasMore: hasMore);
+  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+    final (element, result) = _removeElement(current, predicate);
+    return FetchedState(
+      result,
+      patch == null || element == null
+          ? metadata
+          : patch([element], metadata)?.build(),
+      query,
+      hasMore: hasMore,
+    );
   }
 
   @override
@@ -776,14 +815,15 @@ class _PrependEvent<T, Q> implements Event<PageState<T, Q>> {
 
 @immutable
 class _RemoveEvent<T, Q> implements Event<PageState<T, Q>> {
-  const _RemoveEvent(this._predicate);
+  const _RemoveEvent(this._predicate, this._patch);
 
   @override
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
-    yield state()._remove(_predicate);
+    yield state()._remove(_predicate, _patch);
   }
 
   final Predicate<T> _predicate;
+  final MetadataPatch<T>? _patch;
 }
 
 extension _ListApplication<T> on ElementComparisonStrategy<T> {

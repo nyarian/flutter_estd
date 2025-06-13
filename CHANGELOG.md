@@ -153,3 +153,7 @@
 ## 0.0.38
 
 * Introduce the optional argument to the ResultState
+
+## 0.0.39
+
+* Add the option to update metadata for `PagedBloc` when removing an element
