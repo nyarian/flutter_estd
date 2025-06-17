@@ -513,7 +513,10 @@ void main() {
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
-          subject.transformSingle((_) => given, (e) => e.name == '#0');
+          subject.transformSingle(
+            (e) => e.name == '#0',
+            (_) => given,
+          );
 
           expect(
             subject.state(),
@@ -540,7 +543,10 @@ void main() {
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
-          subject.transformSingle((_) => given, (e) => e.name == '#0');
+          subject.transformSingle(
+            (e) => e.name == '#0',
+            (_) => given,
+          );
 
           expect(
             subject.state(),
@@ -567,7 +573,10 @@ void main() {
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
-          subject.transformSingle((_) => given, (e) => e.name == '#0');
+          subject.transformSingle(
+            (e) => e.name == '#0',
+            (_) => given,
+          );
 
           expect(
             subject.state(),

@@ -161,3 +161,7 @@
 ## 0.0.40
 
 * Add the dynamic transformation operation to the `PagedBloc`
+
+## 0.0.41
+
+* Change the `PagedBloc#transformSingle` parameter order

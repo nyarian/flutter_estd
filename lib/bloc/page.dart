@@ -170,7 +170,7 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
     _delegate.add(_ReplaceEvent((_) => element, predicate));
   }
 
-  void transformSingle(Transformation<T, T> map, Predicate<T> predicate) {
+  void transformSingle(Predicate<T> predicate, Transformation<T, T> map) {
     _delegate.add(_ReplaceEvent(map, predicate));
   }
 
