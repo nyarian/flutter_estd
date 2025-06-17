@@ -499,6 +499,88 @@ void main() {
   );
 
   group(
+    'transform: ',
+    () {
+      test(
+        'changes a single matched element',
+        () async {
+          const given = _Element('#20');
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..[0] = given);
+
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.transformSingle((_) => given, (e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'changes a single matched element for error state',
+        () async {
+          const given = _Element('#20');
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..[0] = given);
+
+          final subject = createTestSubject(
+            initialData:
+                await const _ContinuousElementGateway().get(const Query.of('')),
+            gateway: const _ErrorElementGateway(),
+          );
+          await _PagedFixture(subject).prepare();
+          subject.transformSingle((_) => given, (e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<ErrorState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+
+      test(
+        'changes a single matched element for fetching state',
+        () async {
+          const given = _Element('#20');
+          final expected = BuiltList.of(
+              (await const _ContinuousElementGateway().get(const Query.of('')))
+                  .$1
+                  .toList()
+                ..[0] = given);
+
+          final subject = createTestSubject(
+            initialData:
+                await const _ContinuousElementGateway().get(const Query.of('')),
+            gateway: const _NonReturningElementGateway(),
+          );
+          await _PagedFixture(subject).prepare();
+          subject.transformSingle((_) => given, (e) => e.name == '#0');
+
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchingState<_Element, String>>(
+                (e) => e.current == expected)),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
+    },
+  );
+
+  group(
     'append: ',
     () {
       test(

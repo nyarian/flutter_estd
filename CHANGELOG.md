@@ -157,3 +157,7 @@
 ## 0.0.39
 
 * Add the option to update metadata for `PagedBloc` when removing an element
+
+## 0.0.40
+
+* Add the dynamic transformation operation to the `PagedBloc`

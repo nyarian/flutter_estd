@@ -167,7 +167,11 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
   }
 
   void replaceSingle(T element, Predicate<T> predicate) {
-    _delegate.add(_ReplaceEvent(element, predicate));
+    _delegate.add(_ReplaceEvent((_) => element, predicate));
+  }
+
+  void transformSingle(Transformation<T, T> map, Predicate<T> predicate) {
+    _delegate.add(_ReplaceEvent(map, predicate));
   }
 
   void append(T element) => appendAll([element]);
@@ -260,7 +264,10 @@ sealed class PageState<T, Q> {
     return transitionErrorMsg("Can't prepend in $this");
   }
 
-  PageState<T, Q> _replace(T source, Predicate<T> predicate) {
+  PageState<T, Q> _replace(
+    Transformation<T, T> map,
+    Predicate<T> predicate,
+  ) {
     return transitionErrorMsg("Can't replace in $this");
   }
 
@@ -316,14 +323,14 @@ BuiltList<T> _appendList<T>(
 
 BuiltList<T> _replaceElement<T>(
   BuiltList<T> source,
-  T element,
+  Transformation<T, T> map,
   final Predicate<T> predicate,
 ) {
   final index = source.indexWhere(predicate);
   if (index == -1) {
     return source;
   } else {
-    return BuiltList(source.toList()..[index] = element);
+    return BuiltList(source.toList()..[index] = map(source[index]));
   }
 }
 
@@ -434,8 +441,8 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _replace(T source, Predicate<T> predicate) {
-    final result = current?.let((e) => _replaceElement(e, source, predicate));
+  PageState<T, Q> _replace(Transformation<T, T> map, Predicate<T> predicate) {
+    final result = current?.let((e) => _replaceElement(e, map, predicate));
     return FetchingState(result, metadata, query);
   }
 
@@ -516,9 +523,9 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _replace(T source, Predicate<T> predicate) {
+  PageState<T, Q> _replace(Transformation<T, T> map, Predicate<T> predicate) {
     return ErrorState(
-      current?.let((e) => _replaceElement(e, source, predicate)),
+      current?.let((e) => _replaceElement(e, map, predicate)),
       metadata,
       cause,
       query,
@@ -634,8 +641,8 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _replace(T source, Predicate<T> predicate) {
-    final replaced = _replaceElement(current, source, predicate);
+  PageState<T, Q> _replace(Transformation<T, T> map, Predicate<T> predicate) {
+    final replaced = _replaceElement(current, map, predicate);
     return FetchedState(replaced, metadata, query, hasMore: hasMore);
   }
 
@@ -766,14 +773,14 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
 
 @immutable
 class _ReplaceEvent<T, Q> implements Event<PageState<T, Q>> {
-  const _ReplaceEvent(this._element, this._predicate);
+  const _ReplaceEvent(this._map, this._predicate);
 
   @override
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
-    yield state()._replace(_element, _predicate);
+    yield state()._replace(_map, _predicate);
   }
 
-  final T _element;
+  final Transformation<T, T> _map;
   final Predicate<T> _predicate;
 }
 
