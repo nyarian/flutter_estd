@@ -169,3 +169,7 @@
 ## 0.0.42
 І
 * Add the `electLast` policy to `ResultBloc`
+
+## 0.0.43
+І
+* Add the `containsLowerCase` extension for `String`

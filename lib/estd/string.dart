@@ -5,4 +5,8 @@ extension Estd on String {
   String removeBeginning(String beginning) {
     return startsWith(beginning) ? substring(beginning.length) : this;
   }
+
+  bool containsLowerCase(String source) {
+    return toLowerCase().contains(source.toLowerCase());
+  }
 }
