@@ -9,6 +9,11 @@ class ResultBloc<T, R> implements Bloc<ResultState<T, R>> {
           initialState: IdleState<T, R>(),
         );
 
+  ResultBloc.electLast()
+      : _delegate = StreamTransformerBloc.electLast(
+          initialState: IdleState<T, R>(),
+        );
+
   void run(Supplier<R> supplier, [T? argument]) =>
       _delegate.add(_Run(argument, supplier));
 
@@ -80,6 +85,9 @@ class ProcessingState<T, R> extends ResultState<T, R> {
   @override
   U visit<U>(OperationStateVisitor<T, R, U> visitor) =>
       visitor.processing(argument);
+
+  @override
+  ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
 
   @override
   ResultState<T, R> _success(R result) => SuccessState(result, argument);

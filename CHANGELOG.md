@@ -165,3 +165,7 @@
 ## 0.0.41
 
 * Change the `PagedBloc#transformSingle` parameter order
+
+## 0.0.42
+І
+* Add the `electLast` policy to `ResultBloc`
