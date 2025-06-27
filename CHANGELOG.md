@@ -173,3 +173,7 @@
 ## 0.0.43
 І
 * Add the `containsLowerCase` extension for `String`
+
+## 0.0.44
+І
+* Add the `partition` extension for `Iterable`

@@ -31,3 +31,14 @@ extension Replace<E> on List<E> {
     return index == -1 ? this : (toList()..[index] = element);
   }
 }
+
+extension Partition<E> on Iterable<E> {
+  (List<E>, List<E>) partition(bool Function(E element) test) {
+    final included = <E>[];
+    final excluded = <E>[];
+    for (final e in this) {
+      (test(e) ? included : excluded).add(e);
+    }
+    return (included, excluded);
+  }
+}
