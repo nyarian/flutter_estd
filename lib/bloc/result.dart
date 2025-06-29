@@ -21,6 +21,8 @@ class ResultBloc<T, R> implements Bloc<ResultState<T, R>> {
 
   void onSuccessProcessed() => _delegate.add(_RevertToIdle<T, R>());
 
+  void cancel() => _delegate.add(const _RevertToIdle(forcefully: true));
+
   @override
   Stream<ResultState<T, R>> state() => _delegate.state();
 
@@ -50,7 +52,10 @@ class LambdaSupplier<T> implements Supplier<T> {
 sealed class ResultState<T, R> {
   const ResultState();
   U visit<U>(OperationStateVisitor<T, R, U> visitor);
-  ResultState<T, R> _idle() => transitionError(IdleState);
+  // False linter positive, revise later
+  // ignore: unused_element_parameter
+  ResultState<T, R> _idle({bool forcefully = false}) =>
+      transitionError(IdleState);
   ResultState<T, R> _processing(T? argument) =>
       transitionError(ProcessingState);
   ResultState<T, R> _error(Object cause) => transitionError(ErrorState);
@@ -63,6 +68,11 @@ class IdleState<T, R> extends ResultState<T, R> {
 
   @override
   U visit<U>(OperationStateVisitor<T, R, U> visitor) => visitor.idle();
+
+  @override
+  ResultState<T, R> _idle({bool forcefully = false}) {
+    return forcefully ? this : super._idle(forcefully: forcefully);
+  }
 
   @override
   ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
@@ -85,6 +95,11 @@ class ProcessingState<T, R> extends ResultState<T, R> {
   @override
   U visit<U>(OperationStateVisitor<T, R, U> visitor) =>
       visitor.processing(argument);
+
+  @override
+  ResultState<T, R> _idle({bool forcefully = false}) {
+    return forcefully ? IdleState<T, R>() : super._idle(forcefully: forcefully);
+  }
 
   @override
   ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
@@ -119,7 +134,9 @@ class SuccessState<T, R> extends ResultState<T, R> {
       visitor.success(result, argument);
 
   @override
-  ResultState<T, R> _idle() => IdleState<T, R>();
+  // False linter positive, revise later
+  // ignore: unused_element_parameter
+  ResultState<T, R> _idle({bool forcefully = false}) => IdleState<T, R>();
 
   @override
   ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
@@ -151,7 +168,9 @@ class ErrorState<T, R> extends ResultState<T, R> {
       visitor.error(cause, argument);
 
   @override
-  ResultState<T, R> _idle() => IdleState<T, R>();
+  // False linter positive, revise later
+  // ignore: unused_element_parameter
+  ResultState<T, R> _idle({bool forcefully = false}) => IdleState<T, R>();
 
   @override
   ResultState<T, R> _processing(T? argument) => ProcessingState<T, R>(argument);
@@ -201,12 +220,14 @@ class _Run<T, R> implements Event<ResultState<T, R>> {
 }
 
 class _RevertToIdle<T, R> implements Event<ResultState<T, R>> {
-  const _RevertToIdle();
+  const _RevertToIdle({bool forcefully = false}) : _forcefully = forcefully;
 
   @override
   Stream<ResultState<T, R>> fold(
     Producer<ResultState<T, R>> currentState,
   ) async* {
-    yield currentState()._idle();
+    yield currentState()._idle(forcefully: _forcefully);
   }
+
+  final bool _forcefully;
 }

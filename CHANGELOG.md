@@ -177,3 +177,7 @@
 ## 0.0.44
 І
 * Add the `partition` extension for `Iterable`
+
+## 0.0.45
+І
+* Add the `cancel` operation to ResultBloc
