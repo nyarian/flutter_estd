@@ -181,3 +181,7 @@
 ## 0.0.45
 І
 * Add the `cancel` operation to ResultBloc
+
+## 0.0.46
+І
+* `ResultBloc#cancel` internal bugfix

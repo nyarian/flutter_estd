@@ -21,7 +21,7 @@ class ResultBloc<T, R> implements Bloc<ResultState<T, R>> {
 
   void onSuccessProcessed() => _delegate.add(_RevertToIdle<T, R>());
 
-  void cancel() => _delegate.add(const _RevertToIdle(forcefully: true));
+  void cancel() => _delegate.add(_RevertToIdle<T, R>(forcefully: true));
 
   @override
   Stream<ResultState<T, R>> state() => _delegate.state();
