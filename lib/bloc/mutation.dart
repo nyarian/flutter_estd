@@ -70,7 +70,7 @@ sealed class MutationState<T> {
 
   MutationState<T> _fetched(T result) => transitionError(FetchedState);
 
-  MutationState<T> _fetchError(Object error) =>
+  MutationState<T> _fetchError(Object cause) =>
       transitionError(FetchErrorState);
 
   MutatingState<T> _mutating() => transitionError(MutatingState);
@@ -85,11 +85,13 @@ sealed class MutationState<T> {
 
   // False lint positive: it is used in the override.
   // ignore: unused_element_parameter
-  MutationState<T> _mutationError(Object error, [T? partial]) =>
+  MutationState<T> _mutationError(Object cause, [T? partial]) =>
       transitionError(MutationErrorState);
 
   MutationState<T> _clearError({required bool isSafe}) =>
       transitionErrorMsg("Can't clear error for $this");
+
+  T? get currentOrNull;
 }
 
 abstract interface class MutationStateVisitor<T, R> {
@@ -97,13 +99,13 @@ abstract interface class MutationStateVisitor<T, R> {
 
   R fetched(T result);
 
-  R fetchError(Object error, T? current);
+  R fetchError(Object cause, T? current);
 
   R mutating(T current);
 
   R mutated(T result);
 
-  R mutationError(Object error, T current);
+  R mutationError(Object cause, T current);
 }
 
 abstract base class AdHocMutationStateVisitor<T, R>
@@ -119,7 +121,7 @@ abstract base class AdHocMutationStateVisitor<T, R>
   R fetched(T result) => _stub();
 
   @override
-  R fetchError(Object error, T? current) => _stub();
+  R fetchError(Object cause, T? current) => _stub();
 
   @override
   R mutating(T current) => _stub();
@@ -128,7 +130,7 @@ abstract base class AdHocMutationStateVisitor<T, R>
   R mutated(T result) => _stub();
 
   @override
-  R mutationError(Object error, T current) => _stub();
+  R mutationError(Object cause, T current) => _stub();
 
   final Producer<R> _stub;
 }
@@ -163,7 +165,7 @@ class FetchingState<T> extends MutationState<T> {
   MutationState<T> _fetched(T result) => FetchedState(result);
 
   @override
-  MutationState<T> _fetchError(Object error) => FetchErrorState(current, error);
+  MutationState<T> _fetchError(Object cause) => FetchErrorState(current, cause);
 
   @override
   MutationState<T> _clearError({required bool isSafe}) {
@@ -171,6 +173,8 @@ class FetchingState<T> extends MutationState<T> {
   }
 
   final T? current;
+  @override
+  T? get currentOrNull => current;
 
   @override
   bool operator ==(Object other) {
@@ -209,6 +213,8 @@ class FetchedState<T> extends MutationState<T> {
   }
 
   final T result;
+  @override
+  T? get currentOrNull => result;
 
   @override
   bool operator ==(Object other) {
@@ -225,7 +231,7 @@ class FetchedState<T> extends MutationState<T> {
 
 @immutable
 class FetchErrorState<T> extends MutationState<T> {
-  FetchErrorState(this.current, this.error);
+  FetchErrorState(this.current, this.cause);
 
   @override
   MutationState<T> _fetching() => FetchingState(current);
@@ -244,24 +250,26 @@ class FetchErrorState<T> extends MutationState<T> {
 
   @override
   R visit<R>(MutationStateVisitor<T, R> visitor) =>
-      visitor.fetchError(error, current);
+      visitor.fetchError(cause, current);
 
   final T? current;
-  final Object error;
+  final Object cause;
+  @override
+  T? get currentOrNull => current;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is FetchErrorState<T> &&
         other.current == current &&
-        other.error == error;
+        other.cause == cause;
   }
 
   @override
-  int get hashCode => current.hashCode ^ error.hashCode;
+  int get hashCode => current.hashCode ^ cause.hashCode;
 
   @override
-  String toString() => 'FetchErrorState(current: $current, error: $error)';
+  String toString() => 'FetchErrorState(current: $current, cause: $cause)';
 }
 
 @immutable
@@ -280,8 +288,8 @@ class MutatingState<T> extends MutationState<T> {
   }
 
   @override
-  MutationState<T> _mutationError(Object error, [T? partial]) =>
-      MutationErrorState(partial ?? current, error);
+  MutationState<T> _mutationError(Object cause, [T? partial]) =>
+      MutationErrorState(partial ?? current, cause);
 
   @override
   MutationState<T> _clearError({required bool isSafe}) {
@@ -289,6 +297,8 @@ class MutatingState<T> extends MutationState<T> {
   }
 
   final T current;
+  @override
+  T? get currentOrNull => current;
 
   @override
   bool operator ==(Object other) {
@@ -327,6 +337,8 @@ class MutatedState<T> extends MutationState<T> {
   }
 
   final T result;
+  @override
+  T? get currentOrNull => result;
 
   @override
   bool operator ==(Object other) {
@@ -343,36 +355,38 @@ class MutatedState<T> extends MutationState<T> {
 
 @immutable
 class MutationErrorState<T> extends MutationState<T> {
-  MutationErrorState(this.current, this.error);
+  MutationErrorState(this.current, this.cause);
 
   @override
   R visit<R>(MutationStateVisitor<T, R> visitor) =>
-      visitor.mutationError(error, current);
+      visitor.mutationError(cause, current);
 
   @override
   MutationState<T> _patch(Transformation<T, T> transformation) {
-    return MutationErrorState(transformation(current), error);
+    return MutationErrorState(transformation(current), cause);
   }
 
   @override
   MutationState<T> _clearError({required bool isSafe}) => MutatedState(current);
 
   final T current;
-  final Object error;
+  final Object cause;
+  @override
+  T? get currentOrNull => current;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is MutationErrorState<T> &&
         other.current == current &&
-        other.error == error;
+        other.cause == cause;
   }
 
   @override
-  int get hashCode => current.hashCode ^ error.hashCode;
+  int get hashCode => current.hashCode ^ cause.hashCode;
 
   @override
-  String toString() => 'MutationErrorState(current: $current, error: $error)';
+  String toString() => 'MutationErrorState(current: $current, cause: $cause)';
 }
 
 @immutable
@@ -383,9 +397,9 @@ sealed class SimplifiedMutationState<T> {
     return switch (state) {
       FetchingState<T>() => SimplifiedProcessingState<T>(null),
       MutatingState<T>(:var current) => SimplifiedProcessingState<T>(current),
-      FetchErrorState<T>(:var error) => SimplifiedErrorState<T>(error, null),
-      MutationErrorState<T>(:var error, :var current) =>
-        SimplifiedErrorState<T>(error, current),
+      FetchErrorState<T>(:var cause) => SimplifiedErrorState<T>(cause, null),
+      MutationErrorState<T>(:var cause, :var current) =>
+        SimplifiedErrorState<T>(cause, current),
       FetchedState<T>(:var result) ||
       MutatedState<T>(:var result) =>
         SimplifiedResultState(result),
@@ -421,29 +435,29 @@ class SimplifiedProcessingState<T> implements SimplifiedMutationState<T> {
 
 @immutable
 class SimplifiedErrorState<T> implements SimplifiedMutationState<T> {
-  const SimplifiedErrorState(this.error, this.current);
+  const SimplifiedErrorState(this.cause, this.current);
 
   @override
   R visit<R>(SimplifiedMutationStateVisitor<T, R> visitor) {
-    return visitor.error(error, current);
+    return visitor.error(cause, current);
   }
 
-  final Object error;
+  final Object cause;
   final T? current;
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is SimplifiedErrorState<T> &&
-        other.error == error &&
+        other.cause == cause &&
         other.current == current;
   }
 
   @override
-  int get hashCode => error.hashCode ^ current.hashCode;
+  int get hashCode => cause.hashCode ^ current.hashCode;
 
   @override
-  String toString() => 'SimplifiedErrorState(error: $error, current: $current)';
+  String toString() => 'SimplifiedErrorState(cause: $cause, current: $current)';
 }
 
 @immutable
@@ -487,7 +501,7 @@ abstract interface class SimplifiedMutationStateVisitor<T, R> {
 
   R result(T result);
 
-  R error(Object error, T? current);
+  R error(Object cause, T? current);
 }
 
 extension SimplifiedVisitorExtension<T> on MutationState<T> {
@@ -506,7 +520,7 @@ class _SimplifiedMutationStateVisitorAdapter<T, R>
   R fetched(T result) => _delegate.result(result);
 
   @override
-  R fetchError(Object error, T? current) => _delegate.error(error, current);
+  R fetchError(Object cause, T? current) => _delegate.error(cause, current);
 
   @override
   R mutating(T current) => _delegate.processing(current);
@@ -515,7 +529,7 @@ class _SimplifiedMutationStateVisitorAdapter<T, R>
   R mutated(T result) => _delegate.result(result);
 
   @override
-  R mutationError(Object error, T current) => _delegate.error(error, current);
+  R mutationError(Object cause, T current) => _delegate.error(cause, current);
 
   final SimplifiedMutationStateVisitor<T, R> _delegate;
 }

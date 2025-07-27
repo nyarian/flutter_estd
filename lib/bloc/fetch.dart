@@ -33,6 +33,8 @@ sealed class GatewayFetchState<T> {
   GatewayFetchState<T> _fetching() => FetchingState();
   GatewayFetchState<T> _error(Object cause) => ErrorState(cause);
   GatewayFetchState<T> _success(T result) => SuccessState(result);
+
+  T? get currentOrNull;
 }
 
 abstract interface class GatewayFetchStateVisitor<T, R> {
@@ -45,6 +47,9 @@ abstract interface class GatewayFetchStateVisitor<T, R> {
 class FetchingState<T> extends GatewayFetchState<T> {
   @override
   R visit<R>(GatewayFetchStateVisitor<T, R> visitor) => visitor.fetching();
+
+  @override
+  T? get currentOrNull => null;
 
   @override
   bool operator ==(Object other) {
@@ -64,6 +69,9 @@ class ErrorState<T> extends GatewayFetchState<T> {
 
   @override
   R visit<R>(GatewayFetchStateVisitor<T, R> visitor) => visitor.error(cause);
+
+  @override
+  T? get currentOrNull => null;
 
   final Object cause;
 
@@ -86,6 +94,9 @@ class SuccessState<T> extends GatewayFetchState<T> {
 
   @override
   R visit<R>(GatewayFetchStateVisitor<T, R> visitor) => visitor.success(result);
+
+  @override
+  T? get currentOrNull => result;
 
   final T result;
 

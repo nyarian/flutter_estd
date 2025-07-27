@@ -167,21 +167,26 @@
 * Change the `PagedBloc#transformSingle` parameter order
 
 ## 0.0.42
-І
+
 * Add the `electLast` policy to `ResultBloc`
 
 ## 0.0.43
-І
+
 * Add the `containsLowerCase` extension for `String`
 
 ## 0.0.44
-І
+
 * Add the `partition` extension for `Iterable`
 
 ## 0.0.45
-І
+
 * Add the `cancel` operation to ResultBloc
 
 ## 0.0.46
-І
+
 * `ResultBloc#cancel` internal bugfix
+
+## 0.0.47
+
+* Add the `currentOrNull` member to `FetchState` and `MutationState` for easier subject resolution
+* Rename the `error` member to `cause` for `MutationBloc`
