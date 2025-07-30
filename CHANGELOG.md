@@ -190,3 +190,7 @@
 
 * Add the `currentOrNull` member to `FetchState` and `MutationState` for easier subject resolution
 * Rename the `error` member to `cause` for `MutationBloc`
+
+## 0.0.48
+
+* Add `MutationBlocBuilder`, `GatewayFetchBlocBuilder` and `StateRetainingWidget`
