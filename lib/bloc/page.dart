@@ -154,8 +154,10 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
               : null,
         );
 
-  void query(Query<Q> query) {
-    _delegate.add(_QueryEvent(query, _gateway, _strategy, _shortCircuit));
+  void query(Query<Q> query, {bool flush = false}) {
+    _delegate.add(
+      _QueryEvent(query, _gateway, _strategy, _shortCircuit, flush: flush),
+    );
   }
 
   void retry() {
@@ -232,7 +234,11 @@ sealed class PageState<T, Q> {
   BuiltMap<String, Object?>? get metadata;
   Query<Q> get query;
 
-  PageState<T, Q> _fetching(Query<Q> query) =>
+  PageState<T, Q> _fetching(
+    Query<Q> query, {
+    // ignore: unused_element_parameter
+    bool flush = false,
+  }) =>
       transitionErrorMsg("Can't transit to fetching state from $this");
 
   PageState<T, Q> _fetched(
@@ -392,9 +398,13 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   R visit<R>(PageStateVisitor<T, Q, R> visitor) => visitor.fetching(query);
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
-        query == this.query ? current : null,
-        query == this.query ? metadata : null,
+  PageState<T, Q> _fetching(
+    Query<Q> query, {
+    bool flush = false,
+  }) =>
+      FetchingState(
+        query == this.query && !flush ? current : null,
+        query == this.query && !flush ? metadata : null,
         query,
       );
 
@@ -496,9 +506,13 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
       visitor.failure(query, cause);
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
-        this.query == query ? current : null,
-        this.query == query ? metadata : null,
+  PageState<T, Q> _fetching(
+    Query<Q> query, {
+    bool flush = false,
+  }) =>
+      FetchingState(
+        this.query == query && !flush ? current : null,
+        this.query == query && !flush ? metadata : null,
         query,
       );
 
@@ -614,9 +628,13 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _fetching(Query<Q> query) => FetchingState(
-        query.prolongs(this.query) ? current : null,
-        query.prolongs(this.query) ? metadata : null,
+  PageState<T, Q> _fetching(
+    Query<Q> query, {
+    bool flush = false,
+  }) =>
+      FetchingState(
+        query.prolongs(this.query) && !flush ? current : null,
+        query.prolongs(this.query) && !flush ? metadata : null,
         query,
       );
 
@@ -750,12 +768,13 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
     this._query,
     this._gateway,
     this._strategy,
-    this._shortCircuit,
-  );
+    this._shortCircuit, {
+    bool flush = false,
+  }) : _flush = flush;
 
   @override
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
-    yield state()._fetching(_query);
+    yield state()._fetching(_query, flush: _flush);
     try {
       final (elements, metadata) = await _gateway.get(_query);
       yield state()
@@ -769,6 +788,7 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
   final PagedGateway<T, Q> _gateway;
   final ElementComparisonStrategy<T> _strategy;
   final ShortCircuitStrategy<T> _shortCircuit;
+  final bool _flush;
 }
 
 @immutable

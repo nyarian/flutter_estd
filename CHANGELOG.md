@@ -194,3 +194,7 @@
 ## 0.0.48
 
 * Add `MutationBlocBuilder`, `GatewayFetchBlocBuilder` and `StateRetainingWidget`
+
+## 0.0.49
+
+* Add the force fetch option to the `PagedBloc`
