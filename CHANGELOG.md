@@ -198,3 +198,7 @@
 ## 0.0.49
 
 * Add the force fetch option to the `PagedBloc`
+
+## 0.0.50
+
+* Add current data access to the `PagedBloc#Gateway`

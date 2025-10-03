@@ -211,18 +211,31 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
 typedef Page<T> = (Iterable<T>, Map<String, Object?>?);
 
 abstract interface class PagedGateway<T, Q> {
-  Future<Page<T>> get(Query<Q> query);
+  Future<Page<T>> get(
+    Query<Q> query,
+    BuiltList<T>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  );
 }
 
 abstract class NoMetadataPagedGateway<T, Q> implements PagedGateway<T, Q> {
   const NoMetadataPagedGateway();
 
   @override
-  Future<Page<T>> get(Query<Q> query) {
-    return getElements(query).then((e) => (e, null));
+  Future<Page<T>> get(
+    Query<Q> query,
+    BuiltList<T>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) {
+    return getElements(query, currentList, currentMetadata)
+        .then((e) => (e, null));
   }
 
-  Future<Iterable<T>> getElements(Query<Q> query);
+  Future<Iterable<T>> getElements(
+    Query<Q> query,
+    BuiltList<T>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  );
 }
 
 sealed class PageState<T, Q> {
@@ -776,7 +789,9 @@ class _QueryEvent<T, Q> implements Event<PageState<T, Q>> {
   Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
     yield state()._fetching(_query, flush: _flush);
     try {
-      final (elements, metadata) = await _gateway.get(_query);
+      final s = state();
+      final (elements, metadata) =
+          await _gateway.get(_query, s.current, s.metadata);
       yield state()
           ._fetched(_query, elements, metadata, _strategy, _shortCircuit);
     } on Object catch (e) {

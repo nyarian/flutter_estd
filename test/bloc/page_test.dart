@@ -71,7 +71,7 @@ void main() {
         'fetched list is published',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: ''));
+              .get(const Query(value: ''), null, null);
           final subject = createTestSubject();
           expect(
             subject.state(),
@@ -87,7 +87,7 @@ void main() {
         () async {
           const given = {'1': 1};
           final (_, _) = await const _ContinuousElementGateway(metadata: given)
-              .get(const Query(value: ''));
+              .get(const Query(value: ''), null, null);
           final subject = createTestSubject(
             gateway: const _ContinuousElementGateway(metadata: given),
           );
@@ -121,13 +121,13 @@ void main() {
         'fetch error is recovered from with retrying',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: ''));
+              .get(const Query(value: ''), null, null);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
                 0 => throw Exception(),
-                _ => const _ContinuousElementGateway().get(query),
+                _ => const _ContinuousElementGateway().get(query, null, null),
               };
             }),
           );
@@ -152,7 +152,7 @@ void main() {
         'triggers the fetching state with the last snapshotted list',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: ''));
+              .get(const Query(value: ''), null, null);
 
           final subject = createTestSubject();
           await _PagedFixture(subject).prepare();
@@ -205,12 +205,12 @@ void main() {
         'error retains the previous page state',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: ''));
+              .get(const Query(value: ''), null, null);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
-                0 => const _ContinuousElementGateway().get(query),
+                0 => const _ContinuousElementGateway().get(query, null, null),
                 _ => throw Exception(),
               };
             }),
@@ -235,7 +235,7 @@ void main() {
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
                 0 => const _ContinuousElementGateway(metadata: expected)
-                    .get(query),
+                    .get(query, null, null),
                 _ => throw Exception(),
               };
             }),
@@ -255,7 +255,7 @@ void main() {
         'appends the next page to the current page',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 40));
+              .get(const Query(value: '', size: 40), null, null);
 
           final subject = createTestSubject();
           await _PagedFixture(subject).prepare();
@@ -277,9 +277,9 @@ void main() {
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
-                0 => const _ContinuousElementGateway().get(query),
+                0 => const _ContinuousElementGateway().get(query, null, null),
                 _ => const _ContinuousElementGateway(metadata: expected)
-                    .get(query),
+                    .get(query, null, null),
               };
             }),
           );
@@ -298,13 +298,13 @@ void main() {
         'appends the next page to the current page on paging error retry',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 40));
+              .get(const Query(value: '', size: 40), null, null);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
                 1 => throw Exception(),
-                _ => const _ContinuousElementGateway().get(query),
+                _ => const _ContinuousElementGateway().get(query, null, null),
               };
             }),
           );
@@ -325,13 +325,14 @@ void main() {
         'append accounts for duplicates caused by a linear page shift',
         () async {
           final (expected, _) = await const _ContinuousElementGateway()
-              .get(const Query(value: '', size: 30));
+              .get(const Query(value: '', size: 30), null, null);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
-                0 => const _ContinuousElementGateway().get(query),
-                1 => const _ContinuousElementGateway().get(query.shift(-10)),
+                0 => const _ContinuousElementGateway().get(query, null, null),
+                1 => const _ContinuousElementGateway()
+                    .get(query.shift(-10), null, null),
                 _ => throw StateError('Expected only 2 calls'),
               };
             }),
@@ -352,19 +353,19 @@ void main() {
         () async {
           final expected = BuiltList.of([
             ...(await const _ContinuousElementGateway()
-                    .get(const Query(value: '', size: 10)))
+                    .get(const Query(value: '', size: 10), null, null))
                 .$1,
             ...(await const _ContinuousElementGateway(multiplier: 2)
-                    .get(const Query(value: '', start: 10)))
+                    .get(const Query(value: '', start: 10), null, null))
                 .$1,
           ]);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
-                0 => const _ContinuousElementGateway().get(query),
+                0 => const _ContinuousElementGateway().get(query, null, null),
                 1 => const _ContinuousElementGateway(multiplier: 2)
-                    .get(query.shift(-10)),
+                    .get(query.shift(-10), null, null),
                 _ => throw StateError('Expected only 2 calls'),
               };
             }),
@@ -385,19 +386,19 @@ void main() {
         () async {
           final expected = BuiltList.of([
             ...(await const _ContinuousElementGateway()
-                    .get(const Query(value: '')))
+                    .get(const Query(value: ''), null, null))
                 .$1,
-            ...(await const _ContinuousElementGateway(multiplier: 2)
-                    .get(const Query(value: '', start: 20, size: 15)))
+            ...(await const _ContinuousElementGateway(multiplier: 2).get(
+                    const Query(value: '', start: 20, size: 15), null, null))
                 .$1,
           ]);
 
           final subject = createTestSubject(
             gateway: _IncrementalDelegatingElementGateway((count, query) {
               return switch (count) {
-                0 => const _ContinuousElementGateway().get(query),
+                0 => const _ContinuousElementGateway().get(query, null, null),
                 1 => const _ContinuousElementGateway(multiplier: 2)
-                    .get(query.shift(-10)),
+                    .get(query.shift(-10), null, null),
                 _ => throw StateError('Expected only 2 calls'),
               };
             }),
@@ -423,11 +424,11 @@ void main() {
         'changes a single matched element',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -446,15 +447,15 @@ void main() {
         'changes a single matched element for error state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -473,15 +474,15 @@ void main() {
         'changes a single matched element for fetching state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -505,11 +506,11 @@ void main() {
         'changes a single matched element',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -531,15 +532,15 @@ void main() {
         'changes a single matched element for error state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -561,15 +562,15 @@ void main() {
         'changes a single matched element for fetching state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..[0] = given);
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..[0] = given);
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -596,11 +597,11 @@ void main() {
         'adds a single element',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..add(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..add(given));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -619,15 +620,15 @@ void main() {
         'adds a single element for error state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..add(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..add(given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -646,15 +647,15 @@ void main() {
         'adds a single element for fetching state',
         () async {
           const given = _Element('#20');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..add(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..add(given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -672,8 +673,8 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final (given, _) =
-              await const _ContinuousElementGateway().get(const Query.of(''));
+          final (given, _) = await const _ContinuousElementGateway()
+              .get(const Query.of(''), null, null);
           final expected = BuiltList.of(given);
 
           final subject = createTestSubject();
@@ -698,11 +699,11 @@ void main() {
         'adds the elements',
         () async {
           const given = [_Element('#20'), _Element('#21')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..addAll(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..addAll(given));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -721,15 +722,15 @@ void main() {
         'adds the elements for error state',
         () async {
           const given = [_Element('#20'), _Element('#21')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..addAll(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..addAll(given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -748,15 +749,15 @@ void main() {
         'adds the elements for fetching state',
         () async {
           const given = [_Element('#20'), _Element('#21')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..addAll(given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..addAll(given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -774,8 +775,8 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final (given, _) =
-              await const _ContinuousElementGateway().get(const Query.of(''));
+          final (given, _) = await const _ContinuousElementGateway()
+              .get(const Query.of(''), null, null);
           final expected = BuiltList.of(given);
 
           final subject = createTestSubject();
@@ -825,11 +826,11 @@ void main() {
         'adds a single element',
         () async {
           const given = _Element('#-1');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insert(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insert(0, given));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -848,15 +849,15 @@ void main() {
         'adds a single element for error state',
         () async {
           const given = _Element('#-1');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insert(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insert(0, given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -875,15 +876,15 @@ void main() {
         'adds a single element for fetching state',
         () async {
           const given = _Element('#-1');
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insert(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insert(0, given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -901,8 +902,8 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final (given, _) =
-              await const _ContinuousElementGateway().get(const Query.of(''));
+          final (given, _) = await const _ContinuousElementGateway()
+              .get(const Query.of(''), null, null);
           final expected = BuiltList.of(given);
 
           final subject = createTestSubject();
@@ -927,11 +928,11 @@ void main() {
         'adds the elements',
         () async {
           const given = [_Element('#-2'), _Element('#-1')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insertAll(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insertAll(0, given));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -950,15 +951,15 @@ void main() {
         'adds the elements for error state',
         () async {
           const given = [_Element('#-2'), _Element('#-1')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insertAll(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insertAll(0, given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _ErrorElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -977,15 +978,15 @@ void main() {
         'adds the elements for fetching state',
         () async {
           const given = [_Element('#-2'), _Element('#-1')];
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..insertAll(0, given));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..insertAll(0, given));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -1003,8 +1004,8 @@ void main() {
       test(
         'no change if the element is a duplicate of any existing',
         () async {
-          final (given, _) =
-              await const _ContinuousElementGateway().get(const Query.of(''));
+          final (given, _) = await const _ContinuousElementGateway()
+              .get(const Query.of(''), null, null);
           final expected = BuiltList.of(given);
 
           final subject = createTestSubject();
@@ -1083,11 +1084,11 @@ void main() {
       test(
         'removes the element',
         () async {
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..removeAt(0));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..removeAt(0));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -1105,11 +1106,11 @@ void main() {
       test(
         'removes the element for error state',
         () async {
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..removeAt(0));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..removeAt(0));
 
           final subject = createTestSubject();
           await _FetchedFixture(subject).prepare();
@@ -1127,15 +1128,15 @@ void main() {
       test(
         'removes the element for fetching state',
         () async {
-          final expected = BuiltList.of(
-              (await const _ContinuousElementGateway().get(const Query.of('')))
-                  .$1
-                  .toList()
-                ..removeAt(0));
+          final expected = BuiltList.of((await const _ContinuousElementGateway()
+                  .get(const Query.of(''), null, null))
+              .$1
+              .toList()
+            ..removeAt(0));
 
           final subject = createTestSubject(
-            initialData:
-                await const _ContinuousElementGateway().get(const Query.of('')),
+            initialData: await const _ContinuousElementGateway()
+                .get(const Query.of(''), null, null),
             gateway: const _NonReturningElementGateway(),
           );
           await _PagedFixture(subject).prepare();
@@ -1153,8 +1154,8 @@ void main() {
       test(
         'no change if the element is not present',
         () async {
-          final (given, _) =
-              await const _ContinuousElementGateway().get(const Query.of(''));
+          final (given, _) = await const _ContinuousElementGateway()
+              .get(const Query.of(''), null, null);
           final expected = BuiltList.of(given);
 
           final subject = createTestSubject();
@@ -1231,7 +1232,11 @@ class _ContinuousElementGateway implements PagedGateway<_Element, String> {
       : _multiplier = multiplier;
 
   @override
-  Future<Page<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
     return (
       List.generate(
         query.size,
@@ -1249,7 +1254,11 @@ class _ErrorElementGateway implements PagedGateway<_Element, String> {
   const _ErrorElementGateway();
 
   @override
-  Future<Page<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
     return throw Exception();
   }
 }
@@ -1258,7 +1267,11 @@ class _NonReturningElementGateway implements PagedGateway<_Element, String> {
   const _NonReturningElementGateway();
 
   @override
-  Future<Page<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
     return Completer<Page<_Element>>().future;
   }
 }
@@ -1267,7 +1280,11 @@ class _DelegatingElementGateway implements PagedGateway<_Element, String> {
   const _DelegatingElementGateway(this._delegate);
 
   @override
-  Future<Page<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
     return _delegate(query);
   }
 
@@ -1279,7 +1296,11 @@ class _IncrementalDelegatingElementGateway
   _IncrementalDelegatingElementGateway(this._delegate);
 
   @override
-  Future<Page<_Element>> get(Query<String> query) async {
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
     return _delegate(_count++, query);
   }
 
