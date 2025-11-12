@@ -202,3 +202,7 @@
 ## 0.0.50
 
 * Add current data access to the `PagedBloc#Gateway`
+
+## 0.0.51
+
+* Add the `patchMethadata` method to `PagedBloc`

@@ -142,6 +142,27 @@ void main() {
         },
         timeout: const Timeout(Duration(seconds: 1)),
       );
+
+      test(
+        'will not add the same element on a fresh fetch',
+        () async {
+          const value = _Element('test');
+          final gateway =
+              _DelegatingElementGateway((_) async => ([value], null));
+          final (expected, _) =
+              await gateway.get(const Query(value: ''), null, null);
+          final subject = createTestSubject(gateway: gateway);
+          await _FetchedFixture(subject).prepare();
+          subject.query(const Query(value: ''));
+          await _FetchedFixture(subject).prepare();
+          expect(
+            subject.state(),
+            emitsThrough(predicate<FetchedState<_Element, String>>(
+                (e) => e.current == BuiltList.of(expected))),
+          );
+        },
+        timeout: const Timeout(Duration(seconds: 1)),
+      );
     },
   );
 
@@ -1206,6 +1227,69 @@ void main() {
       );
     },
   );
+
+  group(
+    'patchMetadata',
+    () {
+      test(
+        'can patch for fetching state',
+        () async {
+          const expected = {'result': true};
+          final subject =
+              createTestSubject(gateway: const _StuckElementGateway())
+                ..patchMetadata((_) => expected);
+
+          expect(
+            subject.state(),
+            emitsThrough(
+              predicate<FetchingState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'can patch for fetched state',
+        () async {
+          const expected = {'result': true};
+          final subject = createTestSubject();
+          await _FetchedFixture(subject).prepare();
+          subject.patchMetadata((_) => expected);
+
+          expect(
+            subject.state(),
+            emitsThrough(
+              predicate<FetchedState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected),
+              ),
+            ),
+          );
+        },
+      );
+
+      test(
+        'can patch for error state',
+        () async {
+          const expected = {'result': true};
+          final subject =
+              createTestSubject(gateway: const _ErrorElementGateway());
+          await _ErrorFixture(subject).prepare();
+          subject.patchMetadata((_) => expected);
+
+          expect(
+            subject.state(),
+            emitsThrough(
+              predicate<ErrorState<_Element, String>>(
+                (e) => e.metadata == BuiltMap.of(expected),
+              ),
+            ),
+          );
+        },
+      );
+    },
+  );
 }
 
 @immutable
@@ -1225,6 +1309,19 @@ class _Element {
 
   @override
   String toString() => 'PagedSubject(name: $name)';
+}
+
+class _StuckElementGateway implements PagedGateway<_Element, String> {
+  const _StuckElementGateway();
+
+  @override
+  Future<Page<_Element>> get(
+    Query<String> query,
+    BuiltList<_Element>? currentList,
+    BuiltMap<String, Object?>? currentMetadata,
+  ) async {
+    return Future.delayed(const Duration(seconds: 1));
+  }
 }
 
 class _ContinuousElementGateway implements PagedGateway<_Element, String> {

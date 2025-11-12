@@ -188,8 +188,12 @@ class PagedBloc<T, Q> implements Bloc<PageState<T, Q>> {
   void prependAll(Iterable<T> elements) =>
       _delegate.add(_PrependEvent(elements, _strategy, _shortCircuit));
 
-  void removeSingle(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+  void removeSingle(Predicate<T> predicate, [OnRemoveMetadataPatch<T>? patch]) {
     _delegate.add(_RemoveEvent(predicate, patch));
+  }
+
+  void patchMetadata(MetadataPatch<T> patch) {
+    _delegate.add(_PatchMetadataEvent(patch));
   }
 
   @override
@@ -290,14 +294,24 @@ sealed class PageState<T, Q> {
     return transitionErrorMsg("Can't replace in $this");
   }
 
-  // False positive from the linter?
-  // ignore: unused_element_parameter
-  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+  PageState<T, Q> _remove(
+    Predicate<T> predicate, [
+    // ignore: unused_element_parameter
+    OnRemoveMetadataPatch<T>? patch,
+  ]) {
     return transitionErrorMsg("Can't remove in $this");
+  }
+
+  PageState<T, Q> _patchMetadata(MetadataPatch<T> patch) {
+    return transitionErrorMsg("Can't patch metadata in $this");
   }
 }
 
 typedef MetadataPatch<T> = Map<String, Object?>? Function(
+  BuiltMap<String, Object?>? metadata,
+);
+
+typedef OnRemoveMetadataPatch<T> = Map<String, Object?>? Function(
   List<T> updated,
   BuiltMap<String, Object?>? metadata,
 );
@@ -470,7 +484,8 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+  PageState<T, Q> _remove(Predicate<T> predicate,
+      [OnRemoveMetadataPatch<T>? patch]) {
     final current = this.current;
     if (current == null) {
       return FetchingState(current, metadata, query);
@@ -484,6 +499,11 @@ final class FetchingState<T, Q> extends PageState<T, Q> {
         query,
       );
     }
+  }
+
+  @override
+  PageState<T, Q> _patchMetadata(MetadataPatch<T> patch) {
+    return FetchingState(current, patch(metadata)?.build(), query);
   }
 
   @override
@@ -560,7 +580,8 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+  PageState<T, Q> _remove(Predicate<T> predicate,
+      [OnRemoveMetadataPatch<T>? patch]) {
     final current = this.current;
     if (current == null) {
       return FetchingState(current, metadata, query);
@@ -597,6 +618,11 @@ final class ErrorState<T, Q> extends PageState<T, Q> {
               hasMore: elements.length >= query.size,
             );
     }
+  }
+
+  @override
+  PageState<T, Q> _patchMetadata(MetadataPatch<T> patch) {
+    return ErrorState(current, patch(metadata)?.build(), cause, query);
   }
 
   @override
@@ -678,7 +704,8 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
   }
 
   @override
-  PageState<T, Q> _remove(Predicate<T> predicate, [MetadataPatch<T>? patch]) {
+  PageState<T, Q> _remove(Predicate<T> predicate,
+      [OnRemoveMetadataPatch<T>? patch]) {
     final (element, result) = _removeElement(current, predicate);
     return FetchedState(
       result,
@@ -710,6 +737,16 @@ final class FetchedState<T, Q> extends PageState<T, Q> {
               hasMore: elements.length >= query.size,
             );
     }
+  }
+
+  @override
+  PageState<T, Q> _patchMetadata(MetadataPatch<T> patch) {
+    return FetchedState(
+      current,
+      patch(metadata)?.build(),
+      query,
+      hasMore: hasMore,
+    );
   }
 
   @override
@@ -865,7 +902,19 @@ class _RemoveEvent<T, Q> implements Event<PageState<T, Q>> {
   }
 
   final Predicate<T> _predicate;
-  final MetadataPatch<T>? _patch;
+  final OnRemoveMetadataPatch<T>? _patch;
+}
+
+@immutable
+class _PatchMetadataEvent<T, Q> implements Event<PageState<T, Q>> {
+  const _PatchMetadataEvent(this._patch);
+
+  @override
+  Stream<PageState<T, Q>> fold(Producer<PageState<T, Q>> state) async* {
+    yield state()._patchMetadata(_patch);
+  }
+
+  final MetadataPatch<T> _patch;
 }
 
 extension _ListApplication<T> on ElementComparisonStrategy<T> {
