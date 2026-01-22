@@ -31,6 +31,7 @@ class DynamicSpanText extends StatelessWidget {
       textAlign: textAlign,
       maxLines: maxLines,
       overflow: overflow,
+      textScaler: MediaQuery.of(context).textScaler,
       text: TextSpan(style: style, children: spans),
     );
   }

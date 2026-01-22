@@ -206,3 +206,7 @@
 ## 0.0.51
 
 * Add the `patchMethadata` method to `PagedBloc`
+
+## 0.0.52
+
+* Apply the `MediaQuery`'s `textScaler` value when rendering `DynamicSpanText`
