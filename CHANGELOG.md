@@ -210,3 +210,7 @@
 ## 0.0.52
 
 * Apply the `MediaQuery`'s `textScaler` value when rendering `DynamicSpanText`
+
+## 0.0.52
+
+* Add the explicit `navigatorKey` to `RouterConfiguration`

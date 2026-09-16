@@ -5,4 +5,5 @@ abstract interface class RouterConfiguration {
   RouteInformationParser<Object> get routeInformationParser;
   RouterDelegate<Object> get routerDelegate;
   RouterConfig<Object> get routerConfig;
+  GlobalKey<NavigatorState> get navigatorKey;
 }

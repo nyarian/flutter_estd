@@ -11,6 +11,7 @@ analyzer:
     - lib/**/messages_*.dart
     - test/**/*.mocks.dart
     - lib/generated_plugin_registrant.dart
+    - build/**
 
 linter:
   rules:
