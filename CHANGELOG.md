@@ -211,6 +211,10 @@
 
 * Apply the `MediaQuery`'s `textScaler` value when rendering `DynamicSpanText`
 
-## 0.0.52
+## 0.0.53
 
 * Add the explicit `navigatorKey` to `RouterConfiguration`
+
+## 0.0.54
+
+* Make the `otherwise` parameter optional for `KeyValueStorage`

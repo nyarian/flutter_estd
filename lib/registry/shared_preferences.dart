@@ -15,7 +15,7 @@ class SharedPreferencesKeyValueStorage implements KeyValueStorage {
   }
 
   @override
-  Future<bool?> getBool(String key, {required bool otherwise}) {
+  Future<bool?> getBool(String key, {bool? otherwise}) {
     return Future.value(_delegate.getBool(key) ?? otherwise);
   }
 
@@ -25,7 +25,7 @@ class SharedPreferencesKeyValueStorage implements KeyValueStorage {
   }
 
   @override
-  Future<int> getInt(String key, int otherwise) {
+  Future<int?> getInt(String key, [int? otherwise]) {
     return Future.value(_delegate.getInt(key) ?? otherwise);
   }
 

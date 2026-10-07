@@ -11,11 +11,19 @@ abstract class StringKeyValueStorage {
 }
 
 abstract class KeyValueStorage implements StringKeyValueStorage {
-  Future<bool?> getBool(String key, {required bool otherwise});
+  /// Returns the stored bool, or [otherwise] when the key is absent.
+  ///
+  /// [otherwise] defaults to null, so a missing key can be told from a
+  /// stored `false`.
+  Future<bool?> getBool(String key, {bool? otherwise});
 
   Future<void> putBool(String key, {required bool value});
 
-  Future<int?> getInt(String key, int otherwise);
+  /// Returns the stored int, or [otherwise] when the key is absent.
+  ///
+  /// [otherwise] defaults to null, so a missing key can be told from a
+  /// stored `0`.
+  Future<int?> getInt(String key, [int? otherwise]);
 
   Future<void> putInt(String key, int value);
 }
